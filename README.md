@@ -42,5 +42,5 @@ Can add venues, delete venues, update venues, and read venues.
 
 # PWS deployment link and design link
 
-1. PWS Deployment Link: INSERT_HERE
+1. PWS Deployment Link: https://aldebaran-rahman-velp.pbp.cs.ui.ac.id/
 2. Design Link: INSERT_HERE
