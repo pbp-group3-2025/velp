@@ -42,4 +42,5 @@ Can add venues, delete venues, update venues, and read venues.
 
 # PWS deployment link and design link
 
-INSERT_HERE
+PWS Deployment Link: INSERT_HERE
+Design Link: INSERT_HERE
