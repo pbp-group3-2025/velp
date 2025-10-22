@@ -13,17 +13,17 @@ Helping you with venues every day.
 
 # Application description (application story proposed and its benefits)
 
-
+The proposed application is a web-based platform that provides comprehensive information about football and futsal venues in Jakarta. It allows users to discover, review, and book sports venues easily, offering details such as location, pricing, and availability. Users can share their experiences by submitting reviews and ratings, helping others choose the best places to play. Beyond venue information, the app fosters community interaction through a Posts section, where users can share updates and discussions, and a Community section, where they can join local groups to organize matches or events. A built-in report system ensures a safe and moderated environment. Overall, this application enhances convenience, promotes transparency, supports local sports communities, and helps digitalize Jakarta’s football and futsal ecosystem.
 
 
 # List of modules to be implemented
 
-1. Review
-2. Venues (Admin)
-3. Community
-4. Book Venue
-5. Posts
-6. Report
+1. Review (Fanny)
+2. Venues (Admin) (Aldebaran)
+3. Community (Ghani)
+4. Book Venue (Adit)
+5. Posts (Tara)
+6. Report (Gabriel)
 
 
 # Main product category initial dataset source
