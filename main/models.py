@@ -28,6 +28,7 @@ class Report(models.Model):
         RESOLVED = "resolved", "Resolved"
         REJECTED = "rejected", "Rejected"
 
+    target_name = models.CharField(max_length=255, blank=True, default="")
     # reporter
     reporter = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="reports")
 

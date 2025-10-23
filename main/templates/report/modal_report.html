@@ -1,5 +1,11 @@
-<!-- Trigger button example (put anywhere) -->
-<button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#reportModal">
+<!-- Trigger example (create) anywhere -->
+<button type="button"
+        class="btn btn-primary"
+        data-open-report
+        data-target-type="venue"
+        data-object-id="{{ venue.id }}"
+        data-bs-toggle="modal"
+        data-bs-target="#reportModal">
   Report content
 </button>
 
@@ -13,12 +19,11 @@
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
 
-      <form id="reportForm" method="POST" action="{% url 'reports:create' %}">
+      <form id="reportForm" method="POST" action="{% url 'main:create' %}">
         {% csrf_token %}
 
         <!-- mode + target -->
         <input type="hidden" id="report-mode" value="create"> <!-- 'create' or 'edit' -->
-        <input type="hidden" name="content_type" id="report-content-type">
         <input type="hidden" name="object_id" id="report-object-id">
         <input type="hidden" name="target_type" id="report-target-type">
 
@@ -39,7 +44,7 @@
             <textarea name="details" id="report-details" rows="4" class="form-control" placeholder="Add context or evidence..."></textarea>
           </div>
 
-          <p id="reportFeedback" class="small d-none"></p>
+          <p id="reportFeedback" class="small d-none mb-0"></p>
         </div>
 
         <div class="modal-footer">
@@ -53,113 +58,110 @@
 </div>
 
 <script>
-  function getCookie(name) {
+// CSRF helper
+function getCookie(name) {
   const value = `; ${document.cookie}`;
   const parts = value.split(`; ${name}=`);
   if (parts.length === 2) return decodeURIComponent(parts.pop().split(';').shift());
 }
 const csrftoken = getCookie('csrftoken');
 
-const modal = document.getElementById('reportModal');
-const form = document.getElementById('reportForm');
-const feedback = document.getElementById('reportFeedback');
-const submitBtn = document.getElementById('reportSubmitBtn');
+const modalEl      = document.getElementById('reportModal');
+const formEl       = document.getElementById('reportForm');
+const feedbackEl   = document.getElementById('reportFeedback');
+const submitBtnEl  = document.getElementById('reportSubmitBtn');
 
-const modeInput = document.getElementById('report-mode');
-const modalTitle = document.getElementById('reportModalTitle');
+const modeEl       = document.getElementById('report-mode');
+const titleEl      = document.getElementById('reportModalTitle');
 
-const contentTypeInput = document.getElementById('report-content-type');
-const objectIdInput = document.getElementById('report-object-id');
-const targetTypeInput = document.getElementById('report-target-type');
+const objectIdEl   = document.getElementById('report-object-id');
+const targetTypeEl = document.getElementById('report-target-type');
 
-const reasonSelect = document.getElementById('report-reason');
-const detailsTextarea = document.getElementById('report-details');
+const reasonEl     = document.getElementById('report-reason');
+const detailsEl    = document.getElementById('report-details');
 
-function openModal() {
-  feedback.classList.add('hidden');
-  feedback.textContent = '';
-  modal.classList.remove('hidden');
-  modal.classList.add('flex');
-}
-function closeModal() {
-  modal.classList.add('hidden');
-  modal.classList.remove('flex');
-}
+// Populate modal when it's about to be shown
+modalEl.addEventListener('show.bs.modal', (evt) => {
+  const btn = evt.relatedTarget;
+  if (!btn) return;
 
-// Event delegation for open/close + mode switching
-if (modal && form) {
-  document.addEventListener('click', (e) => {
-    const createBtn = e.target.closest('[data-open-report]');
-    const closeBtn  = e.target.closest('[data-close-report]');
-    const editBtn   = e.target.closest('[data-edit-report]');
+  feedbackEl.classList.add('d-none');
+  feedbackEl.textContent = '';
 
-    if (createBtn) {
-      // CREATE mode
-      modeInput.value = 'create';
-      modalTitle.textContent = 'Report content';
-      form.action = form.dataset.createAction || form.action; // default points to create URL in template
-      reasonSelect.value = 'inappropriate';
-      detailsTextarea.value = '';
+  // EDIT mode button has data-edit-report; CREATE has data-open-report
+  if (btn.hasAttribute('data-edit-report')) {
+    modeEl.value = 'edit';
+    titleEl.textContent = 'Edit your report';
+    formEl.action = btn.dataset.reportAction; // e.g. /report/update/<id>/
 
-      contentTypeInput.value = createBtn.dataset.ctId;
-      objectIdInput.value    = createBtn.dataset.objectId;
-      targetTypeInput.value  = createBtn.dataset.targetType;
-      openModal();
+    // Not needed in edit (ignored by view), keep blank
+    objectIdEl.value = '';
+    targetTypeEl.value = '';
+
+    // Prefill
+    reasonEl.value  = btn.dataset.reportReason || 'inappropriate';
+    detailsEl.value = btn.dataset.reportDetails || '';
+
+    submitBtnEl.textContent = 'Save Changes';
+  } else {
+    modeEl.value = 'create';
+    titleEl.textContent = 'Report content';
+    formEl.action = "{% url 'main:create' %}";
+
+    // Filled from opener
+    objectIdEl.value   = btn.dataset.objectId || '';
+    targetTypeEl.value = btn.dataset.targetType || '';
+
+    reasonEl.value  = 'inappropriate';
+    detailsEl.value = '';
+    submitBtnEl.textContent = 'Submit';
+  }
+});
+
+// Optional: reset form when closed
+modalEl.addEventListener('hidden.bs.modal', () => {
+  formEl.reset();
+  feedbackEl.classList.add('d-none');
+  feedbackEl.textContent = '';
+});
+
+// Submit (works for both create & edit)
+formEl.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  submitBtnEl.disabled = true;
+
+  try {
+    const res = await fetch(formEl.action, {
+      method: 'POST',
+      headers: { 'X-CSRFToken': csrftoken },
+      body: new FormData(formEl),
+    });
+
+    // update_report returns JSON, create_report returns JSON — good
+    const data = await res.json();
+
+    feedbackEl.classList.remove('d-none');
+    if (res.ok && data.ok) {
+      feedbackEl.classList.remove('text-danger');
+      feedbackEl.classList.add('text-success');
+      feedbackEl.textContent = data.message || (modeEl.value === 'edit' ? 'Report updated.' : 'Report submitted.');
+      // Close after a beat and refresh to reflect changes
+      setTimeout(() => {
+        const modal = bootstrap.Modal.getInstance(modalEl);
+        modal.hide();
+        window.location.reload();
+      }, 700);
+    } else {
+      feedbackEl.classList.remove('text-success');
+      feedbackEl.classList.add('text-danger');
+      feedbackEl.textContent = data.message || 'Failed to process.';
     }
-
-    if (editBtn) {
-      // EDIT mode
-      modeInput.value = 'edit';
-      modalTitle.textContent = 'Edit your report';
-      form.action = editBtn.dataset.reportAction; // /reports/update/<id>/
-
-      // For EDIT, we don't need content_type/object_id/target_type (ignored by update view)
-      contentTypeInput.value = '';
-      objectIdInput.value    = '';
-      targetTypeInput.value  = '';
-
-      // Prefill existing values
-      reasonSelect.value   = editBtn.dataset.reportReason || 'inappropriate';
-      detailsTextarea.value = editBtn.dataset.reportDetails || '';
-      openModal();
-    }
-
-    if (closeBtn) {
-      closeModal();
-    }
-  });
-
-  // Submit handler covers both create and edit
-  form.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    submitBtn.disabled = true;
-    try {
-      const res = await fetch(form.action, {
-        method: 'POST',
-        headers: { 'X-CSRFToken': csrftoken },
-        body: new FormData(form),
-      });
-      const data = await res.json();
-
-      feedback.classList.remove('hidden');
-      if (res.ok && data.ok) {
-        feedback.classList.remove('text-red-600');
-        feedback.classList.add('text-green-600');
-        feedback.textContent = data.message || (modeInput.value === 'edit' ? 'Report updated.' : 'Report submitted.');
-        setTimeout(() => { closeModal(); form.reset(); location.reload(); }, 700);
-      } else {
-        feedback.classList.remove('text-green-600');
-        feedback.classList.add('text-red-600');
-        feedback.textContent = data.message || 'Failed to process.';
-      }
-    } catch {
-      feedback.classList.remove('hidden');
-      feedback.classList.add('text-red-600');
-      feedback.textContent = 'Network error. Please try again.';
-    } finally {
-      submitBtn.disabled = false;
-    }
-  });
-}
-
+  } catch (err) {
+    feedbackEl.classList.remove('d-none');
+    feedbackEl.classList.add('text-danger');
+    feedbackEl.textContent = 'Network error. Please try again.';
+  } finally {
+    submitBtnEl.disabled = false;
+  }
+});
 </script>

@@ -5,24 +5,44 @@
   class="text-sm text-red-600 hover:underline"
   data-open-report
   data-target-type="{{ target_type }}"
-  data-ct-id="{% content_type_id obj %}"
   data-object-id="{{ obj.pk }}"
   title="Report this item"
 >
   Report
 </button>
 
+<!-- {% if user.is_authenticated %}
+  <button type="button"
+          class="btn btn-link p-0 text-danger"
+          data-open-report
+          data-target-type="venue"
+          data-object-id="{{ venue.id }}"
+          data-bs-toggle="modal"
+          data-bs-target="#reportModal">
+    Report
+  </button>
+{% else %}
+  <a href="{% url 'login' %}">Log in to report</a>
+{% endif %}
+ -->
+<!-- <button type="button"
+        class="btn btn-link p-0 text-decoration-none"
+        data-edit-report
+        data-report-action="{% url 'main:update' report.id %}"
+        data-report-reason="{{ report.reason|escapejs }}"
+        data-report-details="{{ report.details|default:''|escapejs }}"
+        data-bs-toggle="modal"
+        data-bs-target="#reportModal">
+  Edit Report
+</button> -->
 
-                <!-- venue dtail
-                 {% if user.is_authenticated %}
-                    <button class="text-sm text-red-600 hover:text-red-800"
-                            data-open-report
-                            data-target-type="venue"
-                            data-ct-id="{{ venue_content_type_id }}"
-                            data-object-id="{{ venue.id }}">
-                        Report Venue
-                    </button>
-                {% endif %} -->
+
+<!-- {# Venue detail #}
+{% if user.is_authenticated %}
+  {% include "report_button.html" with obj=venue target_type="venue" %}
+{% else %}
+  <a href="{% url 'login' %}">Log in to report</a>
+{% endif %} -->
 
 <!-- views
 def venue_detail(request, pk):
@@ -38,14 +58,14 @@ def venue_detail(request, pk):
     return render(request, 'venue/detail.html', context) -->
 
 
-<!-- home page
-    {# Report feature - Link to My Reports page #}
-    {% if user.is_authenticated %}
-        <div class="p-4">
-            <a href="{% url 'reports:my' %}" class="text-sm text-blue-600 hover:underline mr-4">My Reports</a>
-            {% if user.is_staff %}
-                <a href="{% url 'reports:mod_list' %}" class="text-sm text-blue-600 hover:underline">Moderate Reports</a>
-            {% endif %}
-        </div>
-    {% endif %} -->
+<!-- {% if user.is_authenticated %}
+  <div class="container py-2">
+    <div class="d-flex align-items-center">
+      <a href="{% url 'my' %}" class="btn btn-outline-primary btn-sm me-2">My Reports</a>
+      {% if user.is_staff %}
+        <a href="{% url 'mod_list' %}" class="btn btn-primary btn-sm">Moderate Reports</a>
+      {% endif %}
+    </div>
+  </div>
+{% endif %} -->
 

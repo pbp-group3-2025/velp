@@ -13,6 +13,15 @@ from django.core.paginator import Paginator
 from django.contrib.contenttypes.models import ContentType
 
 
+TARGET_MODEL = {
+    "venue": Venue,
+    "review": Review,
+    "post": Post,
+    "comment": Comment,
+}
+
+# main/views.py
+
 @require_POST
 @login_required
 def create_report(request):
@@ -20,46 +29,51 @@ def create_report(request):
     if not form.is_valid():
         return JsonResponse({"ok": False, "errors": form.errors}, status=400)
 
-    # For demo: skip existence check if target type is post/comment
-    if form.cleaned_data["target_type"] not in ["post", "comment"]:
-        # sanity: target must exist (for non-demo items)
-        model_cls = form.cleaned_data["content_type"].model_class()
-        if not model_cls.objects.filter(pk=form.cleaned_data["object_id"]).exists():
-            return JsonResponse({"ok": False, "message": "Target not found."}, status=404)
+    target_type = form.cleaned_data["target_type"]
+    object_id   = form.cleaned_data["object_id"]
+    reason      = form.cleaned_data["reason"]
+    details     = form.cleaned_data.get("details", "")
 
-    # optional: avoid duplicates (open report by same user on same target)
-    exists = Report.objects.filter(
-        reporter=request.user,
-        content_type=form.cleaned_data["content_type"],
-        object_id=form.cleaned_data["object_id"],
-        status=Report.Status.OPEN,
-    ).exists()
-    if exists:
+    app_model = TARGET_MODEL.get(target_type)
+    if not app_model:
+        return JsonResponse({"ok": False, "message": "Invalid target type."}, status=400)
+
+    from django.apps import apps
+    model_cls = apps.get_model(*app_model)
+    obj = model_cls.objects.filter(pk=object_id).first()
+    if not obj:
+        return JsonResponse({"ok": False, "message": "Target not found."}, status=404)
+
+    from django.contrib.contenttypes.models import ContentType
+    ct = ContentType.objects.get_for_model(model_cls)
+
+    # resolve name directly here (no utils file)
+    if hasattr(obj, "name"):
+        target_name = str(obj.name)
+    elif hasattr(obj, "title"):
+        target_name = str(obj.title)
+    elif hasattr(obj, "username"):
+        target_name = str(obj.username)
+    else:
+        target_name = str(obj)
+
+    if Report.objects.filter(
+        reporter=request.user, content_type=ct, object_id=object_id, status=Report.Status.OPEN
+    ).exists():
         return JsonResponse({"ok": False, "message": "You already have an open report for this item."}, status=409)
 
-    report = form.save(commit=False)
-    report.reporter = request.user
+    report = Report(
+        reporter=request.user,
+        content_type=ct,
+        object_id=object_id,
+        target_type=target_type,
+        reason=reason,
+        details=details,
+        target_name=target_name,  # 👈 store the snapshot name here
+    )
     report.save()
+
     return JsonResponse({"ok": True, "message": "Thanks! Your report has been submitted.", "id": report.id}, status=201)
-
-
-@login_required
-def my_reports(request):
-    """Show reports created by the current user with simple edit links."""
-    qs = Report.objects.filter(reporter=request.user).order_by('-created_at')
-    return render(request, '/my_reports.html', {'reports': qs})
-
-# (Optional) simple list for moderators; add your own permission checks as needed
-@login_required
-def moderation_list(request):
-    if not (request.user.is_staff or request.user.is_superuser):
-        return HttpResponseBadRequest("Forbidden")
-    qs = Report.objects.select_related("reporter", "handled_by").order_by("-created_at")
-    q = request.GET.get("q")
-    if q:
-        qs = qs.filter(Q(details__icontains=q) | Q(reporter__username__icontains=q))
-    page_obj = Paginator(qs, 15).get_page(request.GET.get("page"))
-    return render(request, "/mod_list.html", {"page_obj": page_obj, "Report": Report})
 
 @require_POST
 @login_required

@@ -5,21 +5,22 @@ from .models import Report
 class ReportCreateForm(forms.ModelForm):
     class Meta:
         model = Report
-        fields = ["target_type", "reason", "details", "content_type", "object_id"]
+        # ⬇️ no content_type here
+        fields = ["target_type", "reason", "details", "object_id"]
         widgets = {
             "details": forms.Textarea(attrs={"rows": 4, "placeholder": "Optional details/evidence..."}),
         }
 
-    def clean(self):
-        cleaned = super().clean()
-        # (Optional) prevent duplicate OPEN reports by the same user for the same target in a short timespan
-        # Do this in the view where request.user is available or pass user in __init__ if you like.
-        return cleaned
+    def clean_object_id(self):
+        oid = self.cleaned_data["object_id"]
+        if oid <= 0:
+            raise forms.ValidationError("Invalid object id.")
+        return oid
 
 class ReportUpdateForm(forms.ModelForm):
     class Meta:
         model = Report
-        fields = ["reason", "details"]  # reporter can update these only
+        fields = ["reason", "details"]
         widgets = {
             "details": forms.Textarea(attrs={"rows": 4, "placeholder": "Add/adjust details..."}),
         }

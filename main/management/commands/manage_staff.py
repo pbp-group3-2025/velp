@@ -1,3 +1,4 @@
+# manage_staff.py
 from django.core.management.base import BaseCommand
 from django.contrib.auth import get_user_model
 
@@ -11,7 +12,7 @@ class Command(BaseCommand):
         parser.add_argument(
             '--remove',
             action='store_true',
-            help='Remove staff status instead of adding it',
+            help='Remove admin status instead of adding it',
         )
 
     def handle(self, *args, **options):
