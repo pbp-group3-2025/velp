@@ -1,0 +1,11 @@
+{% extends "community_base.html" %}
+{% block title %}Delete Group{% endblock %}
+{% block content %}
+  <h1 class="h4">Delete “{{ group.name }}”</h1>
+  <p class="text-muted">This will also delete {{ posts_count }} post{{ posts_count|pluralize }}.</p>
+  <form method="post" class="d-flex gap-2">
+    {% csrf_token %}
+    <button class="btn btn-danger">Yes, delete</button>
+    <a class="btn btn-light" href="{% url 'community:group_detail' slug=group.slug %}">Cancel</a>
+  </form>
+{% endblock %}

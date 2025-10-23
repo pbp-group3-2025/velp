@@ -1,0 +1,20 @@
+{% extends "community_base.html" %}
+{% block title %}Delete Post{% endblock %}
+{% block content %}
+  <h1 class="h4">Delete post</h1>
+  <blockquote class="border-start ps-3 text-muted">
+    {{ post.content|linebreaks }}
+    <div class="small">— {{ post.author }} • {{ post.created_at|date:"Y-m-d H:i" }}</div>
+    {% if post.image_url %}
+      <img class="img-fluid mt-2" src="{{ post.image_url }}" alt="">
+    {% endif %}
+  </blockquote>
+  <form method="post" class="d-flex gap-2">
+    {% csrf_token %}
+    <button class="btn btn-danger">Yes, delete</button>
+    <a class="btn btn-light" href="{% url 'community:group_detail' slug=group.slug %}">Cancel</a>
+  </form>
+{% endblock %}
+
+
+

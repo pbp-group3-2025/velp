@@ -1,0 +1,21 @@
+{% extends "community_base.html" %}
+{% block title %}Groups{% endblock %}
+{% block content %}
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h1 class="h4 mb-0">Community Groups</h1>
+    <a class="btn btn-primary" href="{% url 'community:create_group' %}">+ Create Group</a>
+  </div>
+
+  <div class="cardish">
+    <ul class="list-group list-group-flush">
+      {% for g in groups %}
+        <li class="list-group-item d-flex justify-content-between align-items-center">
+          <a class="text-decoration-none" href="{% url 'community:group_detail' slug=g.slug %}">{{ g.name }}</a>
+          <a class="btn btn-sm btn-outline-danger" href="{% url 'community:delete_group' slug=g.slug %}">Delete…</a>
+        </li>
+      {% empty %}
+        <li class="list-group-item">No groups yet.</li>
+      {% endfor %}
+    </ul>
+  </div>
+{% endblock %}
