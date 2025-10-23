@@ -1,21 +1,51 @@
-{% extends "community_base.html" %}
-{% block title %}Groups{% endblock %}
-{% block content %}
-  <div class="d-flex justify-content-between align-items-center mb-3">
-    <h1 class="h4 mb-0">Community Groups</h1>
-    <a class="btn btn-primary" href="{% url 'community:create_group' %}">+ Create Group</a>
-  </div>
+{% extends "base.html" %}
+{% block title %}Community Groups{% endblock %}
 
-  <div class="cardish">
-    <ul class="list-group list-group-flush">
-      {% for g in groups %}
-        <li class="list-group-item d-flex justify-content-between align-items-center">
-          <a class="text-decoration-none" href="{% url 'community:group_detail' slug=g.slug %}">{{ g.name }}</a>
-          <a class="btn btn-sm btn-outline-danger" href="{% url 'community:delete_group' slug=g.slug %}">Delete…</a>
-        </li>
-      {% empty %}
-        <li class="list-group-item">No groups yet.</li>
-      {% endfor %}
-    </ul>
-  </div>
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h2 class="h5 mb-0">Find, join & discuss with football groups</h2>
+  <a class="btn btn-success btn-sm" href="{% url 'community:create_group' %}">+ New Group</a>
+</div>
+
+<input id="js-group-search" type="text" class="form-control mb-3" placeholder="Search groups…">
+
+<div class="row g-3" id="js-group-list">
+  {% for g in groups %}
+    <div class="col-12">
+      <div class="card shadow-sm border-0">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-start">
+            <div>
+              <h3 class="h6 mb-1">{{ g.name }}</h3>
+              {% if g.description %}
+                <p class="text-muted small mb-2">{{ g.description|truncatechars:140 }}</p>
+              {% endif %}
+              <span class="badge text-bg-light">{{ g.posts.count }} posts</span>
+            </div>
+            <a class="btn btn-primary btn-sm" href="{% url 'community:group_detail' g.slug %}">Open</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  {% empty %}
+    <div class="col-12">
+      <div class="alert alert-light border">No groups yet. Create the first one!</div>
+    </div>
+  {% endfor %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  // tiny client-side filter for the list page only
+  const q = document.getElementById('js-group-search');
+  const cards = [...document.querySelectorAll('#js-group-list .card')];
+  q?.addEventListener('input', () => {
+    const needle = q.value.toLowerCase();
+    cards.forEach(c => {
+      const text = c.textContent.toLowerCase();
+      c.parentElement.style.display = text.includes(needle) ? '' : 'none';
+    });
+  });
+</script>
 {% endblock %}

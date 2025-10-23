@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% block title %}{{ post.headline|default:"Post" }} – {{ group.name }}{% endblock %}
+
+{% block extra_head %}
+<style>
+  /* keep the hero image responsive and not taller than the viewport */
+  .post-hero {
+    border-radius: 12px;
+    overflow: hidden;
+    background: #f8f9fa;
+  }
+  .post-hero img {
+    width: 100%;
+    /* between 240px and 520px, ~45% of viewport height */
+    height: clamp(240px, 45vh, 520px);
+    object-fit: cover;      /* fill the box without distortion */
+    object-position: center;
+    display: block;
+  }
+
+  /* optional: if you prefer to show the *entire* image without cropping */
+  /* .post-hero--contain img { object-fit: contain; background:#fff; } */
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container my-4">
+  <a href="{% url 'community:group_detail' group.slug %}" class="btn btn-outline-secondary btn-sm mb-3">← Back to {{ group.name }}</a>
+
+  {% if post.image_url %}
+    <figure class="post-hero mb-3">
+      <img src="{{ post.image_url }}" alt="{{ post.headline|default:post.content|truncatechars:60 }}" loading="lazy">
+    </figure>
+  {% endif %}
+
+  <h1 class="h4 mb-1">{{ post.headline|default:post.content|truncatechars:80 }}</h1>
+  <div class="text-muted small mb-3">{{ post.created_at|date:"Y-m-d H:i" }} · {{ post.author }}</div>
+
+  <div class="mb-4">{{ post.content|linebreaksbr }}</div>
+
+  <hr class="my-4">
+
+  <h2 class="h6">Comments</h2>
+  {% if post.comments.all %}
+    <div class="mb-3">
+      {% for c in post.comments.all %}
+        <div class="mb-2">
+          <div class="small text-muted">{{ c.author }} • {{ c.created_at|date:"Y-m-d H:i" }}</div>
+          <div>{{ c.content|linebreaksbr }}</div>
+        </div>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="text-muted small mb-3">No comments yet.</div>
+  {% endif %}
+
+  {% if user.is_authenticated %}
+    <form method="post" action="{% url 'community:create_comment' group.slug post.pk %}">
+      {% csrf_token %}
+      <div class="input-group">
+        <input name="content" class="form-control" placeholder="Write a comment…">
+        <button class="btn btn-primary">Send</button>
+      </div>
+    </form>
+  {% endif %}
+</div>
+{% endblock %}

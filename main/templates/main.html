@@ -1,0 +1,87 @@
+{% extends 'base.html' %}
+{% block content %}
+<h1>Velp</h1>
+
+
+<h4>NPM: </h4>
+<p>{{npm}}</p> <!-- Use your NPM here -->
+<h4>Name: </h4>
+<p>{{name}}</p> <!-- Use your name here -->
+<h4>Class: </h4>
+<p>{{class}}</p> <!-- Use your class here -->
+
+
+{% if user.is_authenticated and user.username == "ADMIN" %}
+<a href="{% url 'main:create_venue' %}">
+  <button>+ Add Venue</button>
+</a>
+{% endif %}
+
+
+<a href="{% url 'main:logout' %}">
+  <button>Logout</button>
+</a>
+
+
+<h5>Last login session: {{ last_login }}</h5>
+<hr>
+
+
+
+<!-- <a href="?filter=all">
+    <button type="button">All Articles</button>
+</a>
+<a href="?filter=my">
+    <button type="button">My Articles</button>
+</a> -->
+
+
+<b><p>Scroll through our list of venues!</p></b>
+
+
+{% if not venue_list %}
+    <p>No venue data available in Velp.</p>
+
+
+    {% else %}
+
+
+    {% for venue in venue_list %}
+    <hr>
+    <div>
+    <h2><a href="{% url 'main:show_venue' venue.id %}">{{ venue.title }}</a></h2>
+    <!-- # id, CityName, StreetName, leisure, name -->
+    <p><b>{{ venue.name }}</b></p>
+    <p>City: {{venue.CityName}}</p>
+
+
+    <p>
+        <a href="{% url 'main:show_venue' venue.id %}"><button>Read More</button></a>
+        {% if user.is_authenticated and user.username == "ADMIN" %}
+        <!-- {% if user.is_authenticated and venue.user == user or user.username == "ADMIN" %} -->
+        <a href="{% url 'main:edit_venue' venue.pk %}">
+            <button>
+                Edit
+            </button>
+        </a>
+        <a href="{% url 'main:delete_venue' venue.pk %}">
+        <button>
+            Delete
+        </button>
+        </a>
+        {% endif %}
+       
+    </p>
+
+
+    </div>
+
+
+    <hr>
+    {% endif %}
+    {% endfor %}
+
+
+{% endif %}
+
+{% endblock content %}

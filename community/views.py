@@ -1,6 +1,7 @@
 # community/views.py
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import get_user_model
+from django.contrib.auth.decorators import login_required
 from .models import Group, Post, Comment
 from .forms import PostForm, GroupForm, CommentForm, GroupDescriptionForm
 
@@ -59,22 +60,23 @@ def delete_group(request, slug):
     posts_count = group.posts.count()
     return render(request, 'group_confirm_delete.html', {'group': group, 'posts_count': posts_count})
 
+
+@login_required
 def create_post(request, slug):
     group = get_object_or_404(Group, slug=slug)
-    if request.method != 'POST':
-        return redirect('community:group_detail', slug=group.slug)
+    if request.method == "POST":
+        form = PostForm(request.POST)
+        if form.is_valid():
+            post = form.save(commit=False)
+            post.group = group
+            post.author = request.user
+            post.save()
+            return redirect("community:group_detail", slug=group.slug)
+    else:
+        form = PostForm()
 
-    form = PostForm(request.POST)  # no request.FILES in this app
-    if form.is_valid():
-        post = form.save(commit=False)
-        post.group = group
-        post.author = request.user if request.user.is_authenticated else _guest_user()
-        post.save()
-        return redirect('community:group_detail', slug=group.slug)
+    return render(request, "post_form.html", {"form": form, "group": group})
 
-    posts = group.posts.select_related('author').all()
-    comment_form = CommentForm()
-    return render(request, 'group_detail.html', {'group': group, 'posts': posts, 'form': form, 'comment_form': comment_form})
 
 def delete_post(request, slug, pk):
     """Delete a post inside a group and return to the group detail page."""
@@ -84,6 +86,23 @@ def delete_post(request, slug, pk):
         return redirect('community:group_detail', slug=slug)
     # optional: confirm page if accessed by GET
     return render(request, 'post_confirm_delete.html', {'group': post.group, 'post': post})
+
+def post_detail(request, slug, pk):
+    group = get_object_or_404(Group, slug=slug)
+    post = get_object_or_404(
+        Post.objects.select_related("author", "group")
+            .prefetch_related("comments__author"),
+        pk=pk, group=group
+    )
+
+    # Optional: simple inline comment create on the detail page
+    if request.method == "POST" and request.user.is_authenticated:
+        content = (request.POST.get("content") or "").strip()
+        if content:
+            Comment.objects.create(post=post, author=request.user, content=content)
+        return redirect("community:post_detail", slug=slug, pk=pk)
+
+    return render(request, "post_detail.html", {"group": group, "post": post})
 
 def create_comment(request, slug, pk):
     post = get_object_or_404(Post, pk=pk, group__slug=slug)

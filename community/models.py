@@ -21,6 +21,8 @@ class Post(models.Model):
     content = models.TextField()
     image_url = models.URLField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
+    headline=models.CharField(max_length=255, default='')
+
 
     class Meta:
         ordering = ['-created_at']
@@ -31,6 +33,7 @@ class Post(models.Model):
 class Comment(models.Model):                               
     post = models.ForeignKey(Post, on_delete=models.CASCADE, related_name='comments')
     author = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='community_comments')
+    headline=models.CharField(max_length=255, default='')
     content = models.TextField()
     created_at = models.DateTimeField(auto_now_add=True)
 

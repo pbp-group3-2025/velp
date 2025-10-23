@@ -4,8 +4,9 @@ from .models import Post, Group, Comment
 class PostForm(forms.ModelForm):
     class Meta:
         model = Post
-        fields = ['content', 'image_url']
+        fields = ['headline','content', 'image_url']
         widgets = {
+            'headline': forms.TextInput(attrs={"class": "form-control",'placeholder': 'Short headline '}),
             'content': forms.Textarea(attrs={'rows': 3, 'placeholder': 'Share something…', 'class': 'form-control'}),
             'image_url': forms.URLInput(attrs={'placeholder': 'https://…/image.jpg (optional)', 'class': 'form-control'}),
         }
