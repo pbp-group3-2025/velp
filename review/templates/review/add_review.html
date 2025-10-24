@@ -1,0 +1,99 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container mt-4">
+  <h2>Add a Review</h2>
+  <form method="POST">
+    {% csrf_token %}
+
+    <!-- ACCESSIBILITY -->
+    <div class="mb-3">
+      <label class="form-label">Accessibility</label>
+      <div class="star-rating" data-field="id_accessibility">
+        {% for i in "12345" %}
+          <span class="star" data-value="{{ i }}">&#9733;</span>
+        {% endfor %}
+      </div>
+      {{ form.accessibility }}
+    </div>
+
+    <!-- FACILITY -->
+    <div class="mb-3">
+      <label class="form-label">Facility</label>
+      <div class="star-rating" data-field="id_facility">
+        {% for i in "12345" %}
+          <span class="star" data-value="{{ i }}">&#9733;</span>
+        {% endfor %}
+      </div>
+      {{ form.facility }}
+    </div>
+
+    <!-- VALUE FOR MONEY -->
+    <div class="mb-3">
+      <label class="form-label">Value for money</label>
+      <div class="star-rating" data-field="id_value_for_money">
+        {% for i in "12345" %}
+          <span class="star" data-value="{{ i }}">&#9733;</span>
+        {% endfor %}
+      </div>
+      {{ form.value_for_money }}
+    </div>
+
+    <!-- COMMENT -->
+    <div class="mb-3">
+      <label for="{{ form.comment.id_for_label }}" class="form-label">Comment</label>
+      {{ form.comment }}
+    </div>
+
+    <button type="submit" class="btn btn-primary">Send</button>
+    
+    <a href="{% url 'main:show_venue' id=venue.id %}" class="btn btn-secondary">Cancel</a>
+  </form>
+</div>
+
+<!-- Styles -->
+<style>
+.star-rating {
+  direction: ltr;
+  display: inline-block;
+}
+.star {
+  font-size: 28px;
+  color: #ccc;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+.star:hover,
+.star.selected {
+  color: gold;
+}
+select {
+  display: none; /* cache les select natifs */
+}
+</style>
+
+<!-- Script -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  document.querySelectorAll('.star-rating').forEach(rating => {
+    const fieldId = rating.getAttribute('data-field');
+    const select = document.getElementById(fieldId);
+
+    rating.querySelectorAll('.star').forEach(star => {
+      star.addEventListener('click', function() {
+        const value = this.getAttribute('data-value');
+        select.value = value;
+
+        // mettre à jour la couleur
+        rating.querySelectorAll('.star').forEach(s => s.classList.remove('selected'));
+        this.classList.add('selected');
+        let previous = this.previousElementSibling;
+        while (previous) {
+          previous.classList.add('selected');
+          previous = previous.previousElementSibling;
+        }
+      });
+    });
+  });
+});
+</script>
+{% endblock %}

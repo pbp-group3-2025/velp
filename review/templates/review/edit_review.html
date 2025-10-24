@@ -1,0 +1,115 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container mt-4">
+  <h2>Edit Your Review</h2>
+  <form method="POST">
+    {% csrf_token %}
+
+    <!-- ACCESSIBILITY -->
+    <div class="mb-3">
+      <label class="form-label">Accessibility</label>
+      <div class="star-rating" data-field="id_accessibility" data-current="{{ form.instance.accessibility }}">
+        {% for i in "12345" %}
+          <span class="star" data-value="{{ i }}">&#9733;</span>
+        {% endfor %}
+      </div>
+      {{ form.accessibility }}
+    </div>
+
+    <!-- FACILITY -->
+    <div class="mb-3">
+      <label class="form-label">Facility</label>
+      <div class="star-rating" data-field="id_facility" data-current="{{ form.instance.facility }}">
+        {% for i in "12345" %}
+          <span class="star" data-value="{{ i }}">&#9733;</span>
+        {% endfor %}
+      </div>
+      {{ form.facility }}
+    </div>
+
+    <!-- VALUE FOR MONEY -->
+    <div class="mb-3">
+      <label class="form-label">Value for Money</label>
+      <div class="star-rating" data-field="id_value_for_money" data-current="{{ form.instance.value_for_money }}">
+        {% for i in "12345" %}
+          <span class="star" data-value="{{ i }}">&#9733;</span>
+        {% endfor %}
+      </div>
+      {{ form.value_for_money }}
+    </div>
+
+    <!-- COMMENT -->
+    <div class="mb-3">
+      <label for="{{ form.comment.id_for_label }}" class="form-label">Comment</label>
+      {{ form.comment }}
+    </div>
+
+    <button type="submit" class="btn btn-primary">Save changes</button>
+    <a href="{% url 'main:show_venue' id=review.venue.id %}" class="btn btn-secondary">Cancel</a>
+  </form>
+</div>
+
+<!-- Styles -->
+<style>
+.star-rating {
+  direction: ltr;
+  display: inline-block;
+}
+.star {
+  font-size: 28px;
+  color: #ccc;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+.star:hover,
+.star.selected {
+  color: gold;
+}
+select {
+  display: none; /* cache les select natifs */
+}
+textarea {
+  width: 100%;
+  min-height: 100px;
+  resize: vertical;
+  padding: 10px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+  font-size: 15px;
+}
+</style>
+
+<!-- Script -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  document.querySelectorAll('.star-rating').forEach(rating => {
+    const fieldId = rating.getAttribute('data-field');
+    const currentValue = rating.getAttribute('data-current');
+    const select = document.getElementById(fieldId);
+
+    // pré-remplissage des étoiles existantes
+    rating.querySelectorAll('.star').forEach(star => {
+      if (parseInt(star.dataset.value) <= currentValue) {
+        star.classList.add('selected');
+      }
+    });
+
+    // gestion des clics
+    rating.querySelectorAll('.star').forEach(star => {
+      star.addEventListener('click', function() {
+        const value = this.getAttribute('data-value');
+        select.value = value;
+
+        rating.querySelectorAll('.star').forEach(s => s.classList.remove('selected'));
+        this.classList.add('selected');
+        let prev = this.previousElementSibling;
+        while (prev) {
+          prev.classList.add('selected');
+          prev = prev.previousElementSibling;
+        }
+      });
+    });
+  });
+});
+</script>
+{% endblock %}
