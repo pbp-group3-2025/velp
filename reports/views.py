@@ -11,7 +11,7 @@ from .forms import ReportUpdateForm, ReportCreateForm
 
 # If you don't want clients to send content_type at all:
 # map target_type -> model class
-from venues.models import Venue   # adjust imports to your actual apps
+from main.models import Venue   # adjust imports to your actual apps
 from reviews.models import Review # adjust
 from posts.models import Post     # adjust
 from comments.models import Comment  # adjust
