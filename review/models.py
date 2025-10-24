@@ -1,26 +1,7 @@
 import uuid
 from django.db import models
 from django.contrib.auth.models import User
-
-
-#A supprimer quand le vrai modèle Venue sera disponible
-# A remplacer par from venues.models import Venue
-class Venue(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE, null=True)
-    LEISURE_CHOICES = [
-        ('pitch', 'Pitch'),
-        ('stadium', 'Stadium'),
-        ('sports_centre', 'Sports Centre'),
-    ]
-
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    CityName = models.CharField(max_length=255)
-    StreetName = models.TextField()
-    leisure = models.CharField(max_length=20, choices=LEISURE_CHOICES, default='pitch')
-    name = models.TextField(blank=True, null=True)
-    
-    def __str__(self):
-        return self.name
+from main.models import Venue
 
 
 class Review(models.Model):
