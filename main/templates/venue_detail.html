@@ -33,4 +33,27 @@
   </p>
 {% endif %}
 
+{% for review in venue.reviews.all %}
+  <p><strong>{{ review.user.username }}</strong> : {{ review.average_rating }}/5</p>
+  <p>{{ review.comment }}</p>
+
+    {% if review.user == request.user %}
+      <form action="{% url 'review:delete_review' review.id %}" method="POST" style="display:inline;">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+      </form>
+
+    <a href="{% url 'review:edit_review' review.id %}" class="btn btn-warning btn-sm">
+        Edit
+    </a>
+    {% endif %}
+
+  <hr>
+{% empty %}
+  <p>No review at the moment.</p>
+{% endfor %}
+
+<a href="{% url 'review:add_review' venue.id %}" class="btn btn-primary">
+  Add a review
+</a>
 {% endblock content %}
