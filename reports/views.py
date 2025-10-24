@@ -17,6 +17,7 @@ from posts.models import Post     # adjust
 from community.models import Group  # adjust
 from posts.models import Comment
 from community.models import Post as CommunityPost
+# from comments.models import Comment  # adjust
 
 TARGET_MODEL = {
     "venue": Venue,
