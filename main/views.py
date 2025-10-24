@@ -1,17 +1,20 @@
-from django.shortcuts import render
-
-# Create your views here.
-# reports/views.py
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import require_POST
 from django.http import JsonResponse, HttpResponseForbidden, HttpResponseBadRequest
 from django.shortcuts import get_object_or_404, render, redirect
-from .models import Report
-from .forms import ReportUpdateForm, ReportCreateForm
 from django.db.models import Q
 from django.core.paginator import Paginator
 from django.contrib.contenttypes.models import ContentType
 
+from .models import Report
+from .forms import ReportUpdateForm, ReportCreateForm
+
+# If you don't want clients to send content_type at all:
+# map target_type -> model class
+from venues.models import Venue   # adjust imports to your actual apps
+from reviews.models import Review # adjust
+from posts.models import Post     # adjust
+from comments.models import Comment  # adjust
 
 TARGET_MODEL = {
     "venue": Venue,
@@ -20,12 +23,11 @@ TARGET_MODEL = {
     "comment": Comment,
 }
 
-# main/views.py
-
 @require_POST
 @login_required
 def create_report(request):
     form = ReportCreateForm(request.POST)
+
     if not form.is_valid():
         return JsonResponse({"ok": False, "errors": form.errors}, status=400)
 
@@ -34,82 +36,87 @@ def create_report(request):
     reason      = form.cleaned_data["reason"]
     details     = form.cleaned_data.get("details", "")
 
-    app_model = TARGET_MODEL.get(target_type)
-    if not app_model:
+    # Resolve model & content type on the server
+    model_cls = TARGET_MODEL.get(target_type)
+    if model_cls is None:
         return JsonResponse({"ok": False, "message": "Invalid target type."}, status=400)
 
-    from django.apps import apps
-    model_cls = apps.get_model(*app_model)
-    obj = model_cls.objects.filter(pk=object_id).first()
-    if not obj:
+    # Ensure target exists
+    if not model_cls.objects.filter(pk=object_id).exists():
         return JsonResponse({"ok": False, "message": "Target not found."}, status=404)
 
-    from django.contrib.contenttypes.models import ContentType
-    ct = ContentType.objects.get_for_model(model_cls)
+    content_type = ContentType.objects.get_for_model(model_cls)
 
-    # resolve name directly here (no utils file)
-    if hasattr(obj, "name"):
-        target_name = str(obj.name)
-    elif hasattr(obj, "title"):
-        target_name = str(obj.title)
-    elif hasattr(obj, "username"):
-        target_name = str(obj.username)
-    else:
-        target_name = str(obj)
-
+    # Avoid duplicate OPEN report by same user on same target
     if Report.objects.filter(
-        reporter=request.user, content_type=ct, object_id=object_id, status=Report.Status.OPEN
+        reporter=request.user,
+        content_type=content_type,
+        object_id=object_id,
+        status=Report.Status.OPEN,
     ).exists():
         return JsonResponse({"ok": False, "message": "You already have an open report for this item."}, status=409)
 
     report = Report(
         reporter=request.user,
-        content_type=ct,
+        content_type=content_type,
         object_id=object_id,
         target_type=target_type,
         reason=reason,
         details=details,
-        target_name=target_name,  # 👈 store the snapshot name here
     )
     report.save()
-
     return JsonResponse({"ok": True, "message": "Thanks! Your report has been submitted.", "id": report.id}, status=201)
+
+
+@login_required
+def my_reports(request):
+    qs = Report.objects.filter(reporter=request.user).order_by('-created_at')
+    return render(request, 'report/my_reports.html', {'reports': qs})  # <-- no leading slash
+
+
+@login_required
+def mod_list(request):
+    if not (request.user.is_staff or request.user.is_superuser):
+        return HttpResponseForbidden("Forbidden")  # <-- correct response
+
+    qs = Report.objects.select_related("reporter", "handled_by").order_by("-created_at")
+    q = request.GET.get("q")
+    if q:
+        qs = qs.filter(Q(details__icontains=q) | Q(reporter__username__icontains=q))
+    page_obj = Paginator(qs, 15).get_page(request.GET.get("page"))
+    return render(request, 'report/mod_list.html', {"page_obj": page_obj, "Report": Report})
+
 
 @require_POST
 @login_required
 def update_report(request, pk: int):
     report = get_object_or_404(Report, pk=pk)
 
-    # Only the original reporter can edit
     if report.reporter_id != request.user.id:
         return HttpResponseForbidden("You cannot edit this report.")
 
-    # Block edits if locked (resolved/rejected)
     if report.is_locked:
-        return JsonResponse(
-            {"ok": False, "message": "This report can no longer be edited."},
-            status=409
-        )
+        return JsonResponse({"ok": False, "message": "This report can no longer be edited."}, status=409)
 
     form = ReportUpdateForm(request.POST, instance=report)
     if not form.is_valid():
         return JsonResponse({"ok": False, "errors": form.errors}, status=400)
 
-    form.save()  # keep current status (OPEN/UNDER_REVIEW) unchanged
+    form.save()
     return JsonResponse({"ok": True, "message": "Report updated.", "id": report.id})
 
-@login_required
+
 @require_POST
+@login_required
 def update_report_status(request, pk: int):
-    """Update report status (staff only)"""
     if not request.user.is_staff:
         return HttpResponseForbidden("Staff only")
-        
+
     report = get_object_or_404(Report, pk=pk)
     new_status = request.POST.get('status')
-    
-    if new_status not in [Report.Status.RESOLVED, Report.Status.REJECTED]:
+
+    if new_status not in (Report.Status.RESOLVED, Report.Status.REJECTED, Report.Status.UNDER_REVIEW):
         return HttpResponseBadRequest("Invalid status")
-        
+
     report.set_status(new_status, request.user)
-    return redirect('main:mod_list')
+    return redirect('reports:mod_list')  # <-- fixed namespace
