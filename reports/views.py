@@ -31,27 +31,25 @@ TARGET_MODEL = {
 @login_required
 def create_report(request):
     form = ReportCreateForm(request.POST)
-
     if not form.is_valid():
-        return JsonResponse({"ok": False, "errors": form.errors}, status=400)
+        # TEMP: return detailed errors so you can see the exact field failing
+        return JsonResponse({"ok": False, "message": "Invalid form", "errors": form.errors}, status=400)
 
     target_type = form.cleaned_data["target_type"]
     object_id   = form.cleaned_data["object_id"]
     reason      = form.cleaned_data["reason"]
     details     = form.cleaned_data.get("details", "")
 
-    # Resolve model & content type on the server
+    # resolve model on server (don’t accept content_type from client)
     model_cls = TARGET_MODEL.get(target_type)
     if model_cls is None:
         return JsonResponse({"ok": False, "message": "Invalid target type."}, status=400)
 
-    # Ensure target exists
     if not model_cls.objects.filter(pk=object_id).exists():
         return JsonResponse({"ok": False, "message": "Target not found."}, status=404)
 
-    content_type = ContentType.objects.get_for_model(model_cls)
+    content_type = ContentType.objects.get_for_model(model_cls, for_concrete_model=False)
 
-    # Avoid duplicate OPEN report by same user on same target
     if Report.objects.filter(
         reporter=request.user,
         content_type=content_type,
@@ -60,16 +58,17 @@ def create_report(request):
     ).exists():
         return JsonResponse({"ok": False, "message": "You already have an open report for this item."}, status=409)
 
-    report = Report(
+    Report.objects.create(
         reporter=request.user,
         content_type=content_type,
         object_id=object_id,
         target_type=target_type,
         reason=reason,
         details=details,
+        status=Report.Status.OPEN,
     )
-    report.save()
-    return JsonResponse({"ok": True, "message": "Thanks! Your report has been submitted.", "id": report.id}, status=201)
+    return JsonResponse({"ok": True, "message": "Thanks! Your report has been submitted."}, status=201)
+
 
 
 @login_required
