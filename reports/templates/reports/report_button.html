@@ -1,4 +1,4 @@
-{% load report_tags %}
+{% load report_tags humanize %}
 
 {# templates/report_button.html #}
 {# Usage: {% include "reports/report_button.html" with obj=venue target_type="venue" %} #}
@@ -15,61 +15,152 @@
   Report
 </button>
 
-<!-- {% if user.is_authenticated %}
-  <button type="button"
-          class="btn btn-link p-0 text-danger"
-          data-open-report
-          data-target-type="venue"
-          data-object-id="{{ venue.id }}"
-          data-bs-toggle="modal"
-          data-bs-target="#reportModal">
-    Report
-  </button>
-{% endif %}
- -->
+<!-- templates/reports/report_modal.html -->
+<div class="modal fade" id="reportModal" tabindex="-1" aria-labelledby="reportModalTitle" aria-hidden="true" data-bs-backdrop="static">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
 
-<!-- <button type="button"
-        class="btn btn-link p-0 text-decoration-none"
-        data-edit-report
-        data-report-action="{% url 'main:update' report.id %}"
-        data-report-reason="{{ report.reason|escapejs }}"
-        data-report-details="{{ report.details|default:''|escapejs }}"
-        data-bs-toggle="modal"
-        data-bs-target="#reportModal">
-  Edit Report
-</button> -->
+      <div class="modal-header">
+        <h5 class="modal-title" id="reportModalTitle">Report content</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
 
+      <form id="reportForm" method="POST" action="{% url 'create' %}">
+        {% csrf_token %}
 
-<!-- {# Venue detail #}
-{% if user.is_authenticated %}
-  {% include "report_button.html" with obj=venue target_type="venue" %}
-{% endif %} -->
+        <!-- mode + target -->
+        <input type="hidden" id="report-mode" value="create"> <!-- 'create' or 'edit' -->
+        <input type="hidden" name="object_id" id="report-object-id">
+        <input type="hidden" name="target_type" id="report-target-type">
 
+        <div class="modal-body">
+          <div class="mb-3">
+            <label for="report-reason" class="form-label">Reason</label>
+            <select name="reason" id="report-reason" required class="form-select">
+              <option value="inappropriate">Inappropriate / Harassment</option>
+              <option value="spam">Spam / Ads</option>
+              <option value="false_info">False or Misleading Info</option>
+              <option value="scam">Scam / Fraud</option>
+              <option value="other">Other</option>
+            </select>
+          </div>
 
+          <div class="mb-3">
+            <label for="report-details" class="form-label">Details (optional)</label>
+            <textarea name="details" id="report-details" rows="4" class="form-control" placeholder="Add context or evidence..."></textarea>
+          </div>
 
-<!-- views
-def venue_detail(request, pk):
-    venue = get_object_or_404(Venue, pk=pk)
-    
-    # Get the content type ID for Venue model
-    venue_content_type_id = ContentType.objects.get_for_model(Venue).id
-    
-    context = {
-        'venue': venue,
-        'venue_content_type_id': venue_content_type_id,
-    }
-    return render(request, 'venue/detail.html', context) -->
+          <p id="reportFeedback" class="small d-none mb-0"></p>
+        </div>
 
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-primary" id="reportSubmitBtn">Submit</button>
+        </div>
+      </form>
 
-<!-- button modlist -->
-<!-- {% if user.is_authenticated %}
-  <div class="container py-2">
-    <div class="d-flex align-items-center">
-      <a href="{% url 'my' %}" class="btn btn-outline-primary btn-sm me-2">My Reports</a>
-      {% if user.is_staff %}
-        <a href="{% url 'mod_list' %}" class="btn btn-primary btn-sm">Moderate Reports</a>
-      {% endif %}
     </div>
   </div>
-{% endif %} -->
+</div>
 
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  const modalEl      = document.getElementById('reportModal');
+  if (!modalEl) return; // guard if modal isn't present
+
+  const formEl       = document.getElementById('reportForm');
+  const feedbackEl   = document.getElementById('reportFeedback');
+  const submitBtnEl  = document.getElementById('reportSubmitBtn');
+
+  const modeEl       = document.getElementById('report-mode');
+  const titleEl      = document.getElementById('reportModalTitle');
+
+  const objectIdEl   = document.getElementById('report-object-id');
+  const targetTypeEl = document.getElementById('report-target-type');
+
+  const reasonEl     = document.getElementById('report-reason');
+  const detailsEl    = document.getElementById('report-details');
+
+  // CSRF helper
+  function getCookie(name) {
+    const value = `; ${document.cookie}`;
+    const parts = value.split(`; ${name}=`);
+    if (parts.length === 2) return decodeURIComponent(parts.pop().split(';').shift());
+  }
+  const csrftoken = getCookie('csrftoken');
+
+  // Open + prefill
+  modalEl.addEventListener('show.bs.modal', (evt) => {
+    const btn = evt.relatedTarget;
+    if (!btn) return;
+
+    feedbackEl.classList.add('d-none');
+    feedbackEl.textContent = '';
+
+    if (btn.hasAttribute('data-edit-report')) {
+      modeEl.value = 'edit';
+      titleEl.textContent = 'Edit your report';
+      formEl.action = btn.dataset.reportAction || formEl.action;
+
+      objectIdEl.value = '';
+      targetTypeEl.value = '';
+
+      reasonEl.value = btn.dataset.reportReason || 'inappropriate';
+      detailsEl.value = btn.dataset.reportDetails || '';
+      submitBtnEl.textContent = 'Save Changes';
+    } else {
+      modeEl.value = 'create';
+      titleEl.textContent = 'Report content';
+      // Keep server-rendered action as fallback
+      // formEl.action = formEl.action;
+
+      objectIdEl.value   = btn.dataset.objectId || '';
+      targetTypeEl.value = btn.dataset.targetType || '';
+      reasonEl.value  = 'inappropriate';
+      detailsEl.value = '';
+      submitBtnEl.textContent = 'Submit';
+    }
+  });
+
+  modalEl.addEventListener('hidden.bs.modal', () => {
+    formEl.reset();
+    feedbackEl.classList.add('d-none');
+    feedbackEl.textContent = '';
+  });
+
+  formEl.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    submitBtnEl.disabled = true;
+
+    try {
+      const res = await fetch(formEl.action, {
+        method: 'POST',
+        headers: { 'X-CSRFToken': csrftoken },
+        body: new FormData(formEl),
+      });
+      const data = await res.json();
+
+      feedbackEl.classList.remove('d-none');
+      if (res.ok && data.ok) {
+        feedbackEl.classList.remove('text-danger');
+        feedbackEl.classList.add('text-success');
+        feedbackEl.textContent = data.message || (modeEl.value === 'edit' ? 'Report updated.' : 'Report submitted.');
+        setTimeout(() => {
+          bootstrap.Modal.getInstance(modalEl).hide();
+          window.location.reload();
+        }, 700);
+      } else {
+        feedbackEl.classList.remove('text-success');
+        feedbackEl.classList.add('text-danger');
+        feedbackEl.textContent = data.message || 'Failed to process.';
+      }
+    } catch {
+      feedbackEl.classList.remove('d-none');
+      feedbackEl.classList.add('text-danger');
+      feedbackEl.textContent = 'Network error. Please try again.';
+    } finally {
+      submitBtnEl.disabled = false;
+    }
+  });
+});
+</script>

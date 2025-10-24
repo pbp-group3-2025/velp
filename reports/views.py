@@ -11,16 +11,20 @@ from .forms import ReportUpdateForm, ReportCreateForm
 
 # If you don't want clients to send content_type at all:
 # map target_type -> model class
-from venues.models import Venue   # adjust imports to your actual apps
-from reviews.models import Review # adjust
+from main.models import Venue   # adjust imports to your actual apps
+from review.models import Review # adjust
 from posts.models import Post     # adjust
-from comments.models import Comment  # adjust
+from community.models import Group  # adjust
+from posts.models import Comment
+from community.models import Post as CommunityPost
 
 TARGET_MODEL = {
     "venue": Venue,
     "review": Review,
     "post": Post,
+    "community": Group,
     "comment": Comment,
+    "community_post": CommunityPost,
 }
 
 @require_POST

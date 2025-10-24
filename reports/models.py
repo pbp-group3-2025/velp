@@ -11,6 +11,9 @@ class Report(models.Model):
         REVIEW = "review", "Review"
         POST = "post", "Post"
         COMMENT = "comment", "Comment"
+        COMMUNITY = "community", "Community"
+        COMMUNITYPOST = "community_post", "Community Post"
+        
 
     class Reason(models.TextChoices):
         INAPPROPRIATE = "inappropriate", "Inappropriate / Harassment"
