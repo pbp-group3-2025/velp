@@ -33,6 +33,10 @@
   </p>
 {% endif %}
 
+{% if user.is_authenticated %}
+    {% include "reports/report_button.html" with obj=venue target_type="venue" %}
+{% endif %}
+
 {% for review in venue.reviews.all %}
   <p><strong>{{ review.user.username }}</strong> : {{ review.average_rating }}/5</p>
   <p>{{ review.comment }}</p>
@@ -46,6 +50,10 @@
     <a href="{% url 'review:edit_review' review.id %}" class="btn btn-warning btn-sm">
         Edit
     </a>
+    {% endif %}
+
+    {% if user.is_authenticated %}
+      {% include "reports/report_button.html" with obj=review target_type="review" %}
     {% endif %}
 
   <hr>

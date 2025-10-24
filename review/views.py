@@ -81,3 +81,4 @@ def add_review_general(request):
 
     venues = Venue.objects.all()
     return render(request, 'review/add_review_general.html', {'form': form, 'venues': venues})
+

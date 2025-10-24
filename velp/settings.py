@@ -46,12 +46,13 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    "django.contrib.humanize",
     # Local apps
     'reports',
     'community',
     'main',
     'posts',
-    'review',
+    'review', 
 ]
 
 MIDDLEWARE = [

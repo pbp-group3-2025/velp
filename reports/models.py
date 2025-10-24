@@ -11,6 +11,9 @@ class Report(models.Model):
         REVIEW = "review", "Review"
         POST = "post", "Post"
         COMMENT = "comment", "Comment"
+        COMMUNITY = "community", "Community"
+        COMMUNITYPOST = "community_post", "Community Post"
+        
 
     class Reason(models.TextChoices):
         INAPPROPRIATE = "inappropriate", "Inappropriate / Harassment"
@@ -30,7 +33,7 @@ class Report(models.Model):
 
     # generic target
     content_type = models.ForeignKey(ContentType, on_delete=models.CASCADE)
-    object_id = models.PositiveIntegerField()
+    object_id = models.CharField(max_length=64)  # accepts ints or UUIDs as string
     target = GenericForeignKey("content_type", "object_id")
 
     target_type = models.CharField(max_length=20, choices=TargetType.choices)

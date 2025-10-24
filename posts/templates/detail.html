@@ -18,6 +18,10 @@
       <button class="btn btn-sm btn-outline-primary btn-like" data-id="{{ post.id }}">
         Like <span class="badge bg-primary" data-like-count>{{ post.likes.count }}</span>
       </button>
+
+      {% if user.is_authenticated %}
+        {% include "reports/report_button.html" with obj=post target_type="post" %}
+      {% endif %}
     </div>
   </div>
 
@@ -28,6 +32,10 @@
         <div><strong>@{{ c.author.username }}</strong> — {{ c.body }}</div>
         {% if c.author == user or post.author == user %}
           <button class="btn btn-sm btn-outline-danger btn-del-comment" data-id="{{ c.id }}">Delete</button>
+        {% endif %}
+
+        {% if user.is_authenticated %}
+          {% include "reports/report_button.html" with obj=Comment target_type="comment" %}
         {% endif %}
       </li>
     {% endfor %}
