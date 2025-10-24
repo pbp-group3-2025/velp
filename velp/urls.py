@@ -23,4 +23,5 @@ urlpatterns = [
     path('community/', include(('community.urls', 'community'), namespace='community')),
     path('', include(('main.urls', 'main'), namespace='main')),
     path('review/', include('review.urls')),
+    path('posts/', include(('posts.urls', 'posts'), namespace='posts')),
 ]
