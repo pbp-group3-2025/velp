@@ -16,6 +16,8 @@
 
 
 <body>
+    {% include "community_modal.html" %}
     {% block content %} {% endblock content %}
+    <script src="{% static 'js/community.js' %}" defer></script>
 </body>
 </html>
