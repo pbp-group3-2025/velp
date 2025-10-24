@@ -49,7 +49,9 @@ INSTALLED_APPS = [
     # Local apps
     'reports',
     'community',
-    'main', 
+    'main',
+    'posts',
+    'review',
 ]
 
 MIDDLEWARE = [
