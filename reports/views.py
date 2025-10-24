@@ -71,7 +71,7 @@ def create_report(request):
 @login_required
 def my_reports(request):
     qs = Report.objects.filter(reporter=request.user).order_by('-created_at')
-    return render(request, 'report/my_reports.html', {'reports': qs})  # <-- no leading slash
+    return render(request, 'reports/my_reports.html', {'reports': qs})  # <-- no leading slash
 
 
 @login_required
@@ -84,7 +84,7 @@ def mod_list(request):
     if q:
         qs = qs.filter(Q(details__icontains=q) | Q(reporter__username__icontains=q))
     page_obj = Paginator(qs, 15).get_page(request.GET.get("page"))
-    return render(request, 'report/mod_list.html', {"page_obj": page_obj, "Report": Report})
+    return render(request, 'reports/mod_list.html', {"page_obj": page_obj, "Report": Report})
 
 
 @require_POST

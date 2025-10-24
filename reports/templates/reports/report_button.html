@@ -1,11 +1,15 @@
 {% load report_tags %}
 
-{# Usage: {% include "report_button.html" with obj=venue target_type="venue" %} #}
+{# templates/report_button.html #}
+{# Usage: {% include "reports/report_button.html" with obj=venue target_type="venue" %} #}
 <button
-  class="text-sm text-red-600 hover:underline"
+  type="button"
+  class="btn btn-link p-0 text-danger"
   data-open-report
   data-target-type="{{ target_type }}"
   data-object-id="{{ obj.pk }}"
+  data-bs-toggle="modal"
+  data-bs-target="#reportModal"
   title="Report this item"
 >
   Report
@@ -21,10 +25,9 @@
           data-bs-target="#reportModal">
     Report
   </button>
-{% else %}
-  <a href="{% url 'login' %}">Log in to report</a>
 {% endif %}
  -->
+
 <!-- <button type="button"
         class="btn btn-link p-0 text-decoration-none"
         data-edit-report
@@ -40,9 +43,9 @@
 <!-- {# Venue detail #}
 {% if user.is_authenticated %}
   {% include "report_button.html" with obj=venue target_type="venue" %}
-{% else %}
-  <a href="{% url 'login' %}">Log in to report</a>
 {% endif %} -->
+
+
 
 <!-- views
 def venue_detail(request, pk):
@@ -58,6 +61,7 @@ def venue_detail(request, pk):
     return render(request, 'venue/detail.html', context) -->
 
 
+<!-- button modlist -->
 <!-- {% if user.is_authenticated %}
   <div class="container py-2">
     <div class="d-flex align-items-center">
