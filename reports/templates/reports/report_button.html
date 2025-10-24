@@ -1,0 +1,75 @@
+{% load report_tags %}
+
+{# templates/report_button.html #}
+{# Usage: {% include "reports/report_button.html" with obj=venue target_type="venue" %} #}
+<button
+  type="button"
+  class="btn btn-link p-0 text-danger"
+  data-open-report
+  data-target-type="{{ target_type }}"
+  data-object-id="{{ obj.pk }}"
+  data-bs-toggle="modal"
+  data-bs-target="#reportModal"
+  title="Report this item"
+>
+  Report
+</button>
+
+<!-- {% if user.is_authenticated %}
+  <button type="button"
+          class="btn btn-link p-0 text-danger"
+          data-open-report
+          data-target-type="venue"
+          data-object-id="{{ venue.id }}"
+          data-bs-toggle="modal"
+          data-bs-target="#reportModal">
+    Report
+  </button>
+{% endif %}
+ -->
+
+<!-- <button type="button"
+        class="btn btn-link p-0 text-decoration-none"
+        data-edit-report
+        data-report-action="{% url 'main:update' report.id %}"
+        data-report-reason="{{ report.reason|escapejs }}"
+        data-report-details="{{ report.details|default:''|escapejs }}"
+        data-bs-toggle="modal"
+        data-bs-target="#reportModal">
+  Edit Report
+</button> -->
+
+
+<!-- {# Venue detail #}
+{% if user.is_authenticated %}
+  {% include "report_button.html" with obj=venue target_type="venue" %}
+{% endif %} -->
+
+
+
+<!-- views
+def venue_detail(request, pk):
+    venue = get_object_or_404(Venue, pk=pk)
+    
+    # Get the content type ID for Venue model
+    venue_content_type_id = ContentType.objects.get_for_model(Venue).id
+    
+    context = {
+        'venue': venue,
+        'venue_content_type_id': venue_content_type_id,
+    }
+    return render(request, 'venue/detail.html', context) -->
+
+
+<!-- button modlist -->
+<!-- {% if user.is_authenticated %}
+  <div class="container py-2">
+    <div class="d-flex align-items-center">
+      <a href="{% url 'my' %}" class="btn btn-outline-primary btn-sm me-2">My Reports</a>
+      {% if user.is_staff %}
+        <a href="{% url 'mod_list' %}" class="btn btn-primary btn-sm">Moderate Reports</a>
+      {% endif %}
+    </div>
+  </div>
+{% endif %} -->
+
