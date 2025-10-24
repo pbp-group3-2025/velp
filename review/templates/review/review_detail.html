@@ -1,0 +1,9 @@
+{% extends 'base.html' %}
+{% block content %}
+<p><a href="{% url 'review:main' %}"><button>← Back to Review List</button></a></p>
+
+<h1>{{ review.title }}</h1>
+
+<p><b>Review:</b> {{ review.review_text }}</p>
+
+{% endblock content %}

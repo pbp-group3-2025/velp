@@ -1,0 +1,9 @@
+{% extends 'base.html' %}
+{% block content %}
+<p><a href="{% url 'report:main' %}"><button>← Back to Report List</button></a></p>
+
+<h1>{{ report.title }}</h1>
+
+<p><b>Details:</b> {{ report.report_detail }}</p>
+
+{% endblock content %}

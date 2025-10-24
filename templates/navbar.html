@@ -3,19 +3,17 @@
 
   <ul>
     <li><a href="/">Home</a></li>
-    
+
     {% if user.is_authenticated  and user.username == "ADMIN" %}
     <li><a href="{% url 'main:create_venue' %}">Add Venue</a></li>
     {% endif %}
 
-    <li><a href="{% url 'main:create_venue' %}">Review</a></li>
-    <li><a href="{% url 'main:create_venue' %}">Community</a></li>
-    <li><a href="{% url 'main:create_venue' %}">Book Venue</a></li>
-    <li><a href="{% url 'main:create_venue' %}">Posts</a></li>
+    <li><a href="{% url 'review:main' %}">Review</a></li>
+    <li><a href="{% url 'community:main' %}">Community</a></li>
+    <li><a href="{% url 'booking:main' %}">Book Venue</a></li>
+    <li><a href="{% url 'post:main' %}">Posts</a></li>
 
-    {% if user.is_authenticated  and user.username == "ADMIN" %}
-    <li><a href="{% url 'main:create_venue' %}">Reports</a></li>
-    {% endif %}
+    <li><a href="{% url 'report:main' %}">Reports</a></li>
   </ul>
 
   {% if user.is_authenticated %}

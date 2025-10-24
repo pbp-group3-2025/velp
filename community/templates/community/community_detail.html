@@ -1,0 +1,9 @@
+{% extends 'base.html' %}
+{% block content %}
+<p><a href="{% url 'community:main' %}"><button>← Back to Community List</button></a></p>
+
+<h1>{{ community.title }}</h1>
+
+<p><b>Description:</b> {{ community.description }}</p>
+
+{% endblock content %}

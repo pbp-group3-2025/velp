@@ -1,5 +1,4 @@
 from django.shortcuts import render, redirect, get_object_or_404
-from urllib3 import request
 from main.forms import VenueForm
 from main.models import Venue
 from django.http import HttpResponse

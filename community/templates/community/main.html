@@ -1,0 +1,69 @@
+{% extends 'base.html' %}
+{% block content %}
+{% include 'navbar.html' %}
+<h1>Velp - Communities</h1>
+
+<a href="{% url 'community:create_community' %}">
+  <button>+ Add Community</button>
+</a>
+
+
+<a href="{% url 'main:logout' %}">
+  <button>Logout</button>
+</a>
+
+
+<h5>Last login session: {{ last_login }}</h5>
+<hr>
+
+
+<!-- <a href="?filter=all">
+    <button type="button">All Articles</button>
+</a>
+<a href="?filter=my">
+    <button type="button">My Articles</button>
+</a> -->
+
+
+<b><p>Scroll through our list of communities!</p></b>
+
+
+{% if not community_list %}
+<p>No community data available in Velp.</p>
+
+
+{% else %}
+
+
+{% for community in community_list %}
+<hr>
+<div>
+<h2><a href="{% url 'community:show_community' community.id %}">{{ community.title }}</a></h2>
+<p>{{community.community_text}}</p>
+
+
+<p>
+    <a href="{% url 'community:show_community' community.id %}"><button>Read More</button></a>
+    <a href="{% url 'community:edit_community' community.pk %}">
+        <button>
+            Edit
+        </button>
+    </a>
+    <a href="{% url 'community:delete_community' community.pk %}">
+    <button>
+        Delete
+    </button>
+    </a>
+
+</p>
+
+
+</div>
+
+
+<hr>
+{% endfor %}
+
+{% endif %}
+
+{% endblock content %}

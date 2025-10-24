@@ -21,6 +21,6 @@ urlpatterns = [
     path('login/', login_user, name='login'),
     path('logout/', logout_user, name='logout'),
     path('venue/<str:id>/edit', edit_venue, name='edit_venue'), # <uuid:id>
-    path('news/<str:id>/delete', delete_venue, name='delete_venue'),
+    path('venue/<str:id>/delete', delete_venue, name='delete_venue'),
 ]
 

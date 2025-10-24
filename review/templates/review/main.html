@@ -1,0 +1,69 @@
+{% extends 'base.html' %}
+{% block content %}
+{% include 'navbar.html' %}
+<h1>Velp - Reviews</h1>
+
+<a href="{% url 'review:create_review' %}">
+  <button>+ Add Review</button>
+</a>
+
+
+<a href="{% url 'main:logout' %}">
+  <button>Logout</button>
+</a>
+
+
+<h5>Last login session: {{ last_login }}</h5>
+<hr>
+
+
+<!-- <a href="?filter=all">
+    <button type="button">All Articles</button>
+</a>
+<a href="?filter=my">
+    <button type="button">My Articles</button>
+</a> -->
+
+
+<b><p>Scroll through our list of reviews!</p></b>
+
+
+{% if not review_list %}
+<p>No review data available in Velp.</p>
+
+
+{% else %}
+
+
+{% for review in review_list %}
+<hr>
+<div>
+<h2><a href="{% url 'review:show_review' review.id %}">{{ review.title }}</a></h2>
+<p>{{review.review_text}}</p>
+
+
+<p>
+    <a href="{% url 'review:show_review' review.id %}"><button>Read More</button></a>
+    <a href="{% url 'review:edit_review' review.pk %}">
+        <button>
+            Edit
+        </button>
+    </a>
+    <a href="{% url 'review:delete_review' review.pk %}">
+    <button>
+        Delete
+    </button>
+    </a>
+
+</p>
+
+
+</div>
+
+
+<hr>
+{% endfor %}
+
+{% endif %}
+
+{% endblock content %}

@@ -1,0 +1,7 @@
+{% extends 'base.html' %}
+{% block content %}
+<p><a href="{% url 'post:main' %}"><button>← Back to Post List</button></a></p>
+
+<p><b>Post:</b> {{ post.post_text }}</p>
+
+{% endblock content %}

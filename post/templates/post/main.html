@@ -1,0 +1,68 @@
+{% extends 'base.html' %}
+{% block content %}
+{% include 'navbar.html' %}
+<h1>Velp - Posts</h1>
+
+<a href="{% url 'post:create_post' %}">
+  <button>+ Add Post</button>
+</a>
+
+
+<a href="{% url 'main:logout' %}">
+  <button>Logout</button>
+</a>
+
+
+<h5>Last login session: {{ last_login }}</h5>
+<hr>
+
+
+<!-- <a href="?filter=all">
+    <button type="button">All Articles</button>
+</a>
+<a href="?filter=my">
+    <button type="button">My Articles</button>
+</a> -->
+
+
+<b><p>Scroll through our list of posts!</p></b>
+
+
+{% if not post_list %}
+<p>No post data available in Velp.</p>
+
+
+{% else %}
+
+
+{% for post in post_list %}
+<hr>
+<div>
+<p>{{post.post_text}}</p>
+
+
+<p>
+    <a href="{% url 'post:show_post' post.id %}"><button>Read More</button></a>
+    <a href="{% url 'post:edit_post' post.pk %}">
+        <button>
+            Edit
+        </button>
+    </a>
+    <a href="{% url 'post:delete_post' post.pk %}">
+    <button>
+        Delete
+    </button>
+    </a>
+
+</p>
+
+
+</div>
+
+
+<hr>
+{% endfor %}
+
+{% endif %}
+
+{% endblock content %}

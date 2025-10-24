@@ -1,0 +1,67 @@
+{% extends 'base.html' %}
+{% block content %}
+{% include 'navbar.html' %}
+<h1>Velp - Reports</h1>
+
+<a href="{% url 'report:create_report' %}">
+  <button>+ Add Report</button>
+</a>
+
+
+<a href="{% url 'main:logout' %}">
+  <button>Logout</button>
+</a>
+
+
+<h5>Last login session: {{ last_login }}</h5>
+<hr>
+
+
+<!-- <a href="?filter=all">
+    <button type="button">All Articles</button>
+</a>
+<a href="?filter=my">
+    <button type="button">My Articles</button>
+</a> -->
+
+
+<b><p>Scroll through our list of reports!</p></b>
+
+
+{% if not report_list %}
+<p>No report data available in Velp.</p>
+
+
+{% else %}
+
+
+{% for report in report_list %}
+<hr>
+<div>
+<h2><a href="{% url 'report:show_report' report.id %}">{{ report.title }}</a></h2>
+
+<p>
+    <a href="{% url 'report:show_report' report.id %}"><button>Read More</button></a>
+    <a href="{% url 'report:edit_report' report.pk %}">
+        <button>
+            Edit
+        </button>
+    </a>
+    <a href="{% url 'report:delete_report' report.pk %}">
+    <button>
+        Delete
+    </button>
+    </a>
+
+</p>
+
+
+</div>
+
+
+<hr>
+{% endfor %}
+
+{% endif %}
+
+{% endblock content %}
