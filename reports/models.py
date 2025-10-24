@@ -1,11 +1,8 @@
-from django.db import models
-
-# Create your models here.
-# app: reports/models.py
+# reports/models.py
 from django.conf import settings
 from django.db import models
-from django.contrib.contenttypes.models import ContentType
 from django.contrib.contenttypes.fields import GenericForeignKey
+from django.contrib.contenttypes.models import ContentType
 from django.utils import timezone
 
 class Report(models.Model):
@@ -28,11 +25,10 @@ class Report(models.Model):
         RESOLVED = "resolved", "Resolved"
         REJECTED = "rejected", "Rejected"
 
-    target_name = models.CharField(max_length=255, blank=True, default="")
     # reporter
     reporter = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="reports")
 
-    # generic target (works for Venue, Review, Post, Comment, etc.)
+    # generic target
     content_type = models.ForeignKey(ContentType, on_delete=models.CASCADE)
     object_id = models.PositiveIntegerField()
     target = GenericForeignKey("content_type", "object_id")
@@ -48,20 +44,23 @@ class Report(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     resolved_at = models.DateTimeField(null=True, blank=True)
 
+    # if you added this earlier:
+    # target_name = models.CharField(max_length=255, blank=True, default="")
+
     @property
     def is_locked(self) -> bool:
         return self.status in (self.Status.RESOLVED, self.Status.REJECTED)
 
-    class Meta:
-        indexes = [
-            models.Index(fields=["content_type", "object_id", "status"]),
-        ]
-    
     def set_status(self, new_status, by_user):
         self.status = new_status
         self.handled_by = by_user
         if new_status == self.Status.RESOLVED:
             self.resolved_at = timezone.now()
         self.save(update_fields=["status", "handled_by", "resolved_at"])
-    def __str__(self):
-        return f"Report #{self.pk} on {self.target_type}({self.object_id}) by {self.reporter}"
+
+    class Meta:
+        # 👇 IMPORTANT: reuse the existing table from the reports app
+        db_table = "reports"
+        indexes = [
+            models.Index(fields=["content_type", "object_id", "status"]),
+        ]

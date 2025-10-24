@@ -19,7 +19,7 @@
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
 
-      <form id="reportForm" method="POST" action="{% url 'main:create' %}">
+      <form id="reportForm" method="POST" action="{% url 'reports:create' %}">
         {% csrf_token %}
 
         <!-- mode + target -->
@@ -106,7 +106,7 @@ modalEl.addEventListener('show.bs.modal', (evt) => {
   } else {
     modeEl.value = 'create';
     titleEl.textContent = 'Report content';
-    formEl.action = "{% url 'main:create' %}";
+    formEl.action = "{% url 'reports:create' %}";
 
     // Filled from opener
     objectIdEl.value   = btn.dataset.objectId || '';

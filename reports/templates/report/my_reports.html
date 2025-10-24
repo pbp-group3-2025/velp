@@ -52,7 +52,7 @@
                 type="button"
                 class="btn btn-link p-0 text-decoration-none"
                 data-edit-report
-                data-report-action="{% url 'main:update' report.id %}"
+                data-report-action="{% url 'reports:update' report.id %}"
                 data-report-reason="{{ report.reason|escapejs }}"
                 data-report-details="{{ report.details|default:''|escapejs }}"
                 data-bs-toggle="modal"

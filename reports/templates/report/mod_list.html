@@ -37,14 +37,14 @@
 
           <div class="d-flex flex-column align-items-end gap-2">
             {% if report.status != 'resolved' %}
-              <form method="post" action="{% url 'main:update_status' report.id %}">
+              <form method="post" action="{% url 'reports:update_status' report.id %}">
                 {% csrf_token %}
                 <input type="hidden" name="status" value="resolved">
                 <button type="submit" class="btn btn-success btn-sm">Resolve</button>
               </form>
             {% endif %}
             {% if report.status != 'rejected' %}
-              <form method="post" action="{% url 'main:update_status' report.id %}">
+              <form method="post" action="{% url 'reports:update_status' report.id %}">
                 {% csrf_token %}
                 <input type="hidden" name="status" value="rejected">
                 <button type="submit" class="btn btn-danger btn-sm">Reject</button>
