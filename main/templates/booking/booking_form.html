@@ -1,0 +1,32 @@
+{% extends 'base.html' %}
+{% load humanize %}
+{% block content %}
+<h1>Book Venue: {{ venue.name }}</h1>
+<p><b>City:</b> {{ venue.CityName }} &nbsp; <b>Street:</b> {{ venue.StreetName }}</p>
+<p><b>Price per hour:</b> Rp {{ venue.price_per_hour|intcomma }}</p>
+
+<form method="post">
+  {% csrf_token %}
+  {{ form.non_field_errors }}
+  <p>
+    <label>Date</label><br>
+    {{ form.date }}
+  </p>
+  <p>
+    <label>Start hour</label><br>
+    {{ form.start_hour }}
+  </p>
+  <p>
+    <label>Duration (hours)</label><br>
+    {{ form.duration_hours }}
+  </p>
+  <p>
+    <label>Payment method</label><br>
+    {{ form.payment_method }}
+  </p>
+
+  <button type="submit">Create Booking</button>
+</form>
+
+<p><a href="{% url 'main:show_venue' venue.id %}">← Back to venue</a></p>
+{% endblock %}

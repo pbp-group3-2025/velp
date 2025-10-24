@@ -1,0 +1,59 @@
+{% extends 'base.html' %}
+{% load humanize %}
+{% block content %}
+<p><a href="{% url 'main:show_main' %}"><button>← Back to Venue List</button></a></p>
+
+
+<h1>{{ venue.name }}</h1>
+
+
+<p><b>City:</b> {{ venue.CityName }}</p>
+<p><b>Street:</b> {{ venue.StreetName }}</p>
+<p><b>Leisure:</b> {{ venue.leisure }}</p>
+
+<p><b>Price per hour:</b>
+  {% if venue.price_per_hour %}
+    Rp {{ venue.price_per_hour|intcomma }}
+  {% else %}
+    (price not set)
+  {% endif %}
+</p>
+
+{% if user.is_authenticated %}
+  <p>
+    <a href="{% url 'main:create_booking' venue.id %}">
+      <button>Book Now</button>
+    </a>
+  </p>
+{% else %}
+  <p>
+    <a href="{% url 'main:login' %}?next={% url 'main:create_booking' venue.id %}">
+      <button>Login to Book</button>
+    </a>
+  </p>
+{% endif %}
+
+{% for review in venue.reviews.all %}
+  <p><strong>{{ review.user.username }}</strong> : {{ review.average_rating }}/5</p>
+  <p>{{ review.comment }}</p>
+
+    {% if review.user == request.user %}
+      <form action="{% url 'review:delete_review' review.id %}" method="POST" style="display:inline;">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+      </form>
+
+    <a href="{% url 'review:edit_review' review.id %}" class="btn btn-warning btn-sm">
+        Edit
+    </a>
+    {% endif %}
+
+  <hr>
+{% empty %}
+  <p>No review at the moment.</p>
+{% endfor %}
+
+<a href="{% url 'review:add_review' venue.id %}" class="btn btn-primary">
+  Add a review
+</a>
+{% endblock content %}
