@@ -1,25 +1,10 @@
 {% extends "base.html" %}
-{% block title %}{{ post.headline|default:"Post" }} – {{ group.name }}{% endblock %}
+{% block title %}{{ post.headline|default:"Post" }} · {{ group.name }}{% endblock %}
 
 {% block extra_head %}
 <style>
-  /* keep the hero image responsive and not taller than the viewport */
-  .post-hero {
-    border-radius: 12px;
-    overflow: hidden;
-    background: #f8f9fa;
-  }
-  .post-hero img {
-    width: 100%;
-    /* between 240px and 520px, ~45% of viewport height */
-    height: clamp(240px, 45vh, 520px);
-    object-fit: cover;      /* fill the box without distortion */
-    object-position: center;
-    display: block;
-  }
-
-  /* optional: if you prefer to show the *entire* image without cropping */
-  /* .post-hero--contain img { object-fit: contain; background:#fff; } */
+  .post-hero{border-radius:12px;overflow:hidden;background:#f8f9fa;}
+  .post-hero img{width:100%;height:clamp(240px,45vh,520px);object-fit:cover;object-position:center;display:block;}
 </style>
 {% endblock %}
 
@@ -36,6 +21,21 @@
   <h1 class="h4 mb-1">{{ post.headline|default:post.content|truncatechars:80 }}</h1>
   <div class="text-muted small mb-3">{{ post.created_at|date:"Y-m-d H:i" }} · {{ post.author }}</div>
 
+  {% if request.user.is_authenticated %}
+    {% if request.user.id == post.author_id or request.user.id == post.group.owner_id %}
+      <button type="button"
+              class="btn btn-outline-danger btn-sm mb-3"
+              data-bs-toggle="modal"
+              data-bs-target="#confirmModal"
+              data-action="{% url 'community:delete_post' group.slug post.pk %}"
+              data-title="Delete post"
+              data-body="Delete this post? This action can’t be undone."
+              data-redirect="{% url 'community:group_detail' group.slug %}">
+        Delete Post
+      </button>
+    {% endif %}
+  {% endif %}
+
   <div class="mb-4">{{ post.content|linebreaksbr }}</div>
 
   <hr class="my-4">
@@ -44,9 +44,27 @@
   {% if post.comments.all %}
     <div class="mb-3">
       {% for c in post.comments.all %}
-        <div class="mb-2">
-          <div class="small text-muted">{{ c.author }} • {{ c.created_at|date:"Y-m-d H:i" }}</div>
-          <div>{{ c.content|linebreaksbr }}</div>
+        <div class="mb-3 border-bottom pb-2">
+          <div class="d-flex justify-content-between align-items-start">
+            <div class="small text-muted">
+              {{ c.author }} · {{ c.created_at|date:"Y-m-d H:i" }}
+            </div>
+
+            {% if request.user.is_authenticated %}
+              {% if request.user.id == c.author_id or request.user.id == post.group.owner_id %}
+                <button type="button"
+                        class="btn btn-outline-danger btn-sm"
+                        data-bs-toggle="modal"
+                        data-bs-target="#confirmModal"
+                        data-action="{% url 'community:delete_comment' group.slug post.pk c.pk %}"
+                        data-title="Delete comment"
+                        data-body="Delete this comment?">
+                  Delete
+                </button>
+              {% endif %}
+            {% endif %}
+          </div>
+          <div class="mt-1">{{ c.content|linebreaksbr }}</div>
         </div>
       {% endfor %}
     </div>
@@ -54,11 +72,11 @@
     <div class="text-muted small mb-3">No comments yet.</div>
   {% endif %}
 
-  {% if user.is_authenticated %}
+  {% if request.user.is_authenticated %}
     <form method="post" action="{% url 'community:create_comment' group.slug post.pk %}">
       {% csrf_token %}
       <div class="input-group">
-        <input name="content" class="form-control" placeholder="Write a comment…">
+        <input name="content" class="form-control" placeholder="Write a comment…" required>
         <button class="btn btn-primary">Send</button>
       </div>
     </form>

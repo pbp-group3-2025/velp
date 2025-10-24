@@ -1,13 +1,12 @@
- {# community/templates/post_list.html #}
-{% if posts %}
-  <div class="row g-4">
-    {% for p in posts %}
-      <div class="col-12 col-md-6 col-lg-4">
-        {# pass a loop index so we can make a guaranteed-unique id #}
-        {% include "post_card.html" with post=p loop_index=forloop.counter %}
-      </div>
-    {% endfor %}
-  </div>
-{% else %}
-  <p class="text-muted">No posts found.</p>
-{% endif %}
+
+<div class="row g-3">
+  {% for post in posts %}
+    <div class="col-12 col-md-6 col-lg-4">
+      {% include "post_card.html" with post=post %}
+    </div>
+  {% empty %}
+    <div class="col-12">
+      <div class="alert alert-light border">No posts found.</div>
+    </div>
+  {% endfor %}
+</div>

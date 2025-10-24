@@ -1,0 +1,22 @@
+{# Global confirm modal. Do not duplicate IDs on a page. #}
+<div class="modal fade" id="confirmModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Please confirm</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"
+                aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        Are you sure?
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+        <form id="confirmModalForm" method="post" action="">
+          {% csrf_token %}
+          <button type="submit" class="btn btn-danger btn-sm">Yes, delete</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>

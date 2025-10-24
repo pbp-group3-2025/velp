@@ -1,12 +1,11 @@
-{# community/templates/post_card.html #}
-<div class="card border-0 shadow-sm h-100 overflow-hidden">
+
+<div class="card post-card border-0 shadow-sm h-100 overflow-hidden">
   <div class="position-relative">
     {% if post.image_url %}
-      <img
-        src="{{ post.image_url }}"
-        class="card-img-top"
-        alt="{{ post.headline|default:post.content|striptags|truncatechars:40 }}"
-        style="height:160px;object-fit:cover;">
+      <img src="{{ post.image_url }}"
+           class="card-img-top"
+           alt="{{ post.headline|default:post.content|striptags|truncatechars:40 }}"
+           style="height:160px;object-fit:cover;">
     {% else %}
       <div class="bg-light d-flex align-items-center justify-content-center text-muted" style="height:160px;">
         No image
@@ -14,6 +13,9 @@
     {% endif %}
     <div class="position-absolute top-0 start-0 m-2">
       <span class="badge bg-success">Post</span>
+      {% if post.headline %}
+        <span class="badge bg-primary ms-2">Headline</span>
+      {% endif %}
     </div>
   </div>
 
@@ -26,60 +28,26 @@
       {% if post.headline %}{{ post.headline }}{% else %}{{ post.content|striptags|truncatechars:80 }}{% endif %}
     </h6>
 
-    <p class="card-text text-muted small mb-2">
-      {{ post.content|striptags|truncatechars:120 }}
-    </p>
+    <p class="card-text text-muted small mb-2">{{ post.content|striptags|truncatechars:120 }}</p>
 
-    {# Make a truly unique id using post.pk + loop index we passed in #}
-    {% with collapse_id='post-'|add:post.pk|add:'-'|add:loop_index|add:'-more' %}
+    <div class="mt-auto pt-2 d-flex justify-content-between align-items-center">
+      <a class="link-success text-decoration-none small"
+         href="{% url 'community:post_detail' post.group.slug post.pk %}">Read more</a>
 
-      <div class="collapse" id="{{ collapse_id }}">
-        <p class="mb-2 small">{{ post.content|linebreaksbr }}</p>
-
-        <h6 class="fw-semibold small mb-2">Comments</h6>
-        {% if post.comments.all %}
-          {% for c in post.comments.all %}
-            <div class="mb-1">
-              <div class="small text-muted">
-                {{ c.author }} • {{ c.created_at|date:"Y-m-d H:i" }}
-              </div>
-              <div class="small">{{ c.content|linebreaksbr }}</div>
-            </div>
-          {% endfor %}
-        {% else %}
-          <div class="text-muted small">No comments yet.</div>
+      {% if request.user.is_authenticated %}
+        {% if request.user.id == post.author_id or request.user.id == post.group.owner_id %}
+          <button type="button"
+                  class="btn btn-link p-0 small text-danger"
+                  data-bs-toggle="modal"
+                  data-bs-target="#confirmModal"
+                  data-action="{% url 'community:delete_post' post.group.slug post.pk %}"
+                  data-title="Delete post"
+                  data-body="Delete this post? This action can’t be undone."
+                  data-remove-selector=".post-card">
+            Delete
+          </button>
         {% endif %}
-
-        {% if user.is_authenticated %}
-          <form class="mt-2" method="post" action="{% url 'community:create_comment' post.group.slug post.pk %}">
-            {% csrf_token %}
-            <div class="input-group input-group-sm">
-              <input name="content" class="form-control" placeholder="Write a comment…">
-              <button class="btn btn-outline-primary">Send</button>
-            </div>
-          </form>
-        {% else %}
-          <div class="text-muted small">Login to comment.</div>
-        {% endif %}
-      </div>
-
-      <p class="card-text text-muted small mb-2">
-  {{ post.content|striptags|truncatechars:120 }}
-</p>
-
-<div class="mt-auto pt-2 d-flex justify-content-between align-items-center">
-  <a class="link-success text-decoration-none small"
-     href="{% url 'community:post_detail' post.group.slug post.pk %}">
-    Read more
-  </a>
-
-  <a class="link-danger text-decoration-none small"
-     href="{% url 'community:delete_post' post.group.slug post.pk %}">
-    Delete
-  </a>
-</div>
-
-      </div>
-    {% endwith %}
+      {% endif %}
+    </div>
   </div>
 </div>
