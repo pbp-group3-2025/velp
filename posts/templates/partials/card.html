@@ -1,0 +1,32 @@
+<div class="post-card p-3 mb-3" id="post-{{ p.id }}">
+  <div class="d-flex gap-3">
+    <span class="avatar"></span>
+    <div class="flex-grow-1">
+      <div class="d-flex justify-content-between align-items-start">
+        <div>
+          <strong>@{{ p.author.username }}</strong>
+          <span class="muted">• {{ p.created_at|date:"M j, H:i" }}</span>
+          {% if p.venue_hint %}<span class="badge text-bg-light ms-2">{{ p.venue_hint }}</span>{% endif %}
+        </div>
+
+        {% if p.author_id == user.id %}
+        <div class="btn-group btn-group-sm">
+          <a class="btn btn-outline-secondary" href="{% url 'posts:update' p.id %}">Edit</a>
+          <button class="btn btn-outline-danger btn-del" data-id="{{ p.id }}">Delete</button>
+        </div>
+        {% endif %}
+      </div>
+
+      <div class="mt-2">
+        <p class="mb-2" style="white-space:pre-wrap">{{ p.content }}</p>
+      </div>
+
+      <div class="post-actions d-flex gap-2">
+        <button class="btn btn-sm btn-outline-primary btn-like" data-id="{{ p.id }}">
+          Like <span class="badge bg-primary" data-like-count>{{ p.likes.count }}</span>
+        </button>
+        <a class="btn btn-sm btn-outline-secondary" href="{% url 'posts:detail' p.id %}">Comments</a>
+      </div>
+    </div>
+  </div>
+</div>
