@@ -1,0 +1,14 @@
+{% extends 'base.html' %}
+{% load humanize %}
+{% block content %}
+<h1>Booking Detail</h1>
+<p>Venue: {{ booking.venue.name }}</p>
+<p>Date: {{ booking.date }}</p>
+<p>Time: {{ booking.start_time }} — {{ booking.end_time }}</p>
+<p>Duration: {{ booking.duration_hours }} hour(s)</p>
+<p>Payment: {{ booking.get_payment_method_display }}</p>
+<p>Total: Rp {{ booking.total_price|intcomma }}</p>
+<p>Status: {{ booking.get_status_display }}</p>
+
+<p><a href="{% url 'main:booking_list' %}">← Back to my bookings</a></p>
+{% endblock %}

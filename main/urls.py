@@ -4,6 +4,7 @@ from main.views import register
 from main.views import login_user, logout_user
 from main.views import edit_venue
 from main.views import delete_venue
+from main.views import create_booking, booking_list, booking_confirm, booking_cancel
 
 
 app_name = 'main'
@@ -21,6 +22,10 @@ urlpatterns = [
     path('login/', login_user, name='login'),
     path('logout/', logout_user, name='logout'),
     path('venue/<str:id>/edit', edit_venue, name='edit_venue'), # <uuid:id>
-    path('news/<str:id>/delete', delete_venue, name='delete_venue'),
+    path('venue/<str:id>/delete', delete_venue, name='delete_venue'),
+    path('venue/<str:id>/book/', create_booking, name='create_booking'),
+    path('bookings/', booking_list, name='booking_list'),
+    path('booking/<int:pk>/confirm/', booking_confirm, name='booking_confirm'),
+    path('booking/<int:pk>/cancel/', booking_cancel, name='booking_cancel'),
 ]
 
