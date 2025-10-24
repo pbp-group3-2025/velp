@@ -1,0 +1,27 @@
+{% extends 'base.html' %}
+{% load humanize %}
+{% block content %}
+<h1>My Bookings</h1>
+
+<a href="{% url 'main:show_main' %}">
+    <button>Back to Main Page</button>
+</a>
+
+<ul>
+  {% for b in bookings %}
+    <li>
+      {{ b.date }} — {{ b.start_time }} to {{ b.end_time }} @ {{ b.venue.name }} —
+      Rp {{ b.total_price|intcomma }} — {{ b.get_status_display }}
+      <a href="{% url 'main:booking_confirm' b.pk %}">view</a>
+      {% if b.status != "CANCELLED" %}
+        <form action="{% url 'main:booking_cancel' b.pk %}" method="post" style="display:inline">
+          {% csrf_token %}
+          <button type="submit">Cancel</button>
+        </form>
+      {% endif %}
+    </li>
+  {% empty %}
+    <li>No bookings yet.</li>
+  {% endfor %}
+</ul>
+{% endblock %}

@@ -1,0 +1,33 @@
+<nav>
+  <h1>Velp</h1>
+
+  <ul>
+    <li><a href="/">Home</a></li>
+    
+    {% if user.is_authenticated  and user.username == "ADMIN" %}
+    <li><a href="{% url 'main:create_venue' %}">Add Venue</a></li>
+    {% endif %}
+
+    <li><a href="{% url 'review:add_review_general' %}">Review</a></li>
+    <li><a href="{% url 'main:create_venue' %}">Community</a></li>
+    <li><a href="{% url 'main:create_venue' %}">Book Venue</a></li>
+    <li><a href="{% url 'main:create_venue' %}">Posts</a></li>
+
+    {% if user.is_authenticated  and user.username == "ADMIN" %}
+    <li><a href="{% url 'main:create_venue' %}">Reports</a></li>
+    {% endif %}
+  </ul>
+
+  {% if user.is_authenticated %}
+    <div>
+      <span>Welcome, {{ name|default:user.username }}</span>
+      <span>{{ npm|default:"Student" }} - {{ class|default:"Class" }}</span>
+      <a href="{% url 'main:logout' %}">Logout</a>
+    </div>
+  {% else %}
+    <div>
+      <a href="{% url 'main:login' %}">Login</a>
+      <a href="{% url 'main:register' %}">Register</a>
+    </div>
+  {% endif %}
+</nav>

@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block meta %}<title>Post Detail - Velp</title>{% endblock meta %}
+
+{% block content %}
+<div class="mb-3">
+  <a href="{% url 'posts:list' %}" class="btn btn-outline-secondary">&larr; Back to Posts</a>
+</div>
+
+<div class="container py-4" style="max-width:800px">
+  <div class="card mb-3">
+    <div class="card-body">
+      <strong>@{{ post.author.username }}</strong>
+      <small class="text-muted"> · {{ post.created_at|date:"Y-m-d H:i" }}</small>
+      {% if post.venue_hint %}<span class="badge bg-success ms-2">{{ post.venue_hint }}</span>{% endif %}
+      <p class="mt-2">{{ post.content|linebreaksbr }}</p>
+      <button class="btn btn-sm btn-outline-primary btn-like" data-id="{{ post.id }}">
+        Like <span class="badge bg-primary" data-like-count>{{ post.likes.count }}</span>
+      </button>
+    </div>
+  </div>
+
+  <h6 class="mb-2">Comments</h6>
+  <ul class="list-group mb-3" id="comment-list">
+    {% for c in post.comments.all %}
+      <li class="list-group-item d-flex justify-content-between align-items-start" id="c-{{ c.id }}">
+        <div><strong>@{{ c.author.username }}</strong> — {{ c.body }}</div>
+        {% if c.author == user or post.author == user %}
+          <button class="btn btn-sm btn-outline-danger btn-del-comment" data-id="{{ c.id }}">Delete</button>
+        {% endif %}
+      </li>
+    {% endfor %}
+  </ul>
+
+  <form id="comment-form" class="d-flex gap-2" action="{% url 'posts:api_comment_create' post.id %}" method="post">
+    {% csrf_token %}
+    <input type="text" name="body" class="form-control" placeholder="Write a comment…">
+    <button class="btn btn-success">Send</button>
+  </form>
+</div>
+
+<script src="{% static 'posts/posts.js' %}"></script>
+{% endblock content %}

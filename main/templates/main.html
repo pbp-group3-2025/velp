@@ -1,5 +1,6 @@
 {% extends 'base.html' %}
 {% block content %}
+{% include 'navbar.html' %}
 <h1>Velp</h1>
 
 
@@ -11,7 +12,7 @@
 <p>{{class}}</p> <!-- Use your class here -->
 
 
-{% if user.is_authenticated and user.username == "ADMIN" %}
+{% if user.is_authenticated and user.is_superuser %}
 <a href="{% url 'main:create_venue' %}">
   <button>+ Add Venue</button>
 </a>
@@ -25,7 +26,6 @@
 
 <h5>Last login session: {{ last_login }}</h5>
 <hr>
-
 
 
 <!-- <a href="?filter=all">
