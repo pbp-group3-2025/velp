@@ -1,0 +1,53 @@
+
+<div class="card post-card border-0 shadow-sm h-100 overflow-hidden">
+  <div class="position-relative">
+    {% if post.image_url %}
+      <img src="{{ post.image_url }}"
+           class="card-img-top"
+           alt="{{ post.headline|default:post.content|striptags|truncatechars:40 }}"
+           style="height:160px;object-fit:cover;">
+    {% else %}
+      <div class="bg-light d-flex align-items-center justify-content-center text-muted" style="height:160px;">
+        No image
+      </div>
+    {% endif %}
+    <div class="position-absolute top-0 start-0 m-2">
+      <span class="badge bg-success">Post</span>
+      {% if post.headline %}
+        <span class="badge bg-primary ms-2">Headline</span>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="card-body py-3 px-3 d-flex flex-column">
+    <div class="small text-muted mb-1">
+      {{ post.created_at|date:"Y-m-d H:i" }} · {{ post.author }}
+    </div>
+
+    <h6 class="card-title mb-2 fw-semibold text-dark" style="line-height:1.2;">
+      {% if post.headline %}{{ post.headline }}{% else %}{{ post.content|striptags|truncatechars:80 }}{% endif %}
+    </h6>
+
+    <p class="card-text text-muted small mb-2">{{ post.content|striptags|truncatechars:120 }}</p>
+
+    <div class="mt-auto pt-2 d-flex justify-content-between align-items-center">
+      <a class="link-success text-decoration-none small"
+         href="{% url 'community:post_detail' post.group.slug post.pk %}">Read more</a>
+
+      {% if request.user.is_authenticated %}
+        {% if request.user.id == post.author_id or request.user.id == post.group.owner_id %}
+          <button type="button"
+                  class="btn btn-link p-0 small text-danger"
+                  data-bs-toggle="modal"
+                  data-bs-target="#confirmModal"
+                  data-action="{% url 'community:delete_post' post.group.slug post.pk %}"
+                  data-title="Delete post"
+                  data-body="Delete this post? This action can’t be undone."
+                  data-remove-selector=".post-card">
+            Delete
+          </button>
+        {% endif %}
+      {% endif %}
+    </div>
+  </div>
+</div>

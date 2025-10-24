@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block title %}Edit Group{% endblock %}
+{% block content %}
+<h1 class="h4 mb-3">Edit “{{ group.name }}”</h1>
+<form method="post" class="card card-body shadow-sm">
+  {% csrf_token %}
+  <div class="mb-3">
+    <label class="form-label">Description</label>
+    {{ form.description }}
+    <div class="text-danger small">{{ form.description.errors }}</div>
+  </div>
+  <button class="btn btn-primary">Save</button>
+  <a class="btn btn-light" href="{% url 'community:group_detail' slug=group.slug %}">Cancel</a>
+</form>
+{% endblock %}

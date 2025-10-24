@@ -1,0 +1,159 @@
+/* community/static/community/community.css
+   Mild Bootstrap-friendly styling for Community pages
+   -------------------------------------------------- */
+
+/* ---------- Global polish (keeps Bootstrap look) ------------------------ */
+
+body{
+  color: #253036; /* ink-700 */
+}
+
+a.link-success{ color: #23a36f; }            /* brand */
+a.link-success:hover{ color: #1b855b; }      /* brand-600 */
+
+a.link-danger{ color: #c03221; }             /* danger-600 */
+a.link-danger:hover{ color: #a1281b; }
+
+/* Soft badges (like “posts”, “headline”, etc.) */
+.badge-soft{
+  border: 1px solid #e8eef2; /* border */
+  background: #fff;
+  color: #5b6b73;            /* ink-500 */
+  font-weight: 600;
+}
+
+/* Subtle hover lift for cards */
+.card.shadow-sm{
+  border: 1px solid #e8eef2; /* border */
+  transition: transform .12s ease, box-shadow .12s ease, border-color .12s ease;
+}
+.card.shadow-sm:hover{
+  transform: translateY(-2px);
+  box-shadow: 0 10px 24px rgba(0,0,0,.08);
+  border-color: #dde6eb;
+}
+
+/* Tighten buttons a bit on small cards */
+.btn.btn-sm{
+  padding: .35rem .6rem;
+  border-radius: .5rem;
+}
+
+/* ---------- Group list page -------------------------------------------- */
+
+#js-group-list .card-body{
+  padding: 1rem 1.1rem;
+}
+
+#js-group-list h3{
+  margin: 0 0 .25rem 0;
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+#js-group-list .text-muted{
+  color: #6c757d !important; /* muted */
+}
+
+#js-group-list .badge{
+  background: #eef9f4;       /* brand-50 */
+  color: #27851b;            /* brand-600 */
+  border: 1px solid #eef9f4; /* brand-50 */
+}
+
+/*  Group header  */
+
+.group-hero{
+  border-radius: 14px;
+  background: #eef9f4;       /* brand-50 */
+  border: 1px solid #27851b;
+  padding: 1rem 1.2rem;
+}
+
+/* Post cards (grid on group page)  */
+
+.post-card .card-img-top{
+  height: 160px;            /* safe default */
+  object-fit: cover;
+}
+
+@media (max-width: 576px){
+  .post-card .card-img-top{ height: 140px; }
+}
+
+.post-card .card-title{
+  margin: 0 0 .25rem 0;
+  font-size: 1.02rem;
+  line-height: 1.25;
+  font-weight: 700;
+  color: #253036;
+  overflow: hidden;
+  display: box;
+  box-orient: vertical;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  max-height: calc(1.25em * 2); 
+}
+/* Small badges placed on the image */
+.post-card .badge{
+  box-shadow: 0 1px 0 rgba(0,0,0,.04);
+}
+
+/* Action row */
+.post-card .mt-auto .link-danger{
+  padding-left: .25rem;
+}
+
+/* Post detail page  */
+
+.post-hero{
+  border-radius: 12px;
+  overflow: hidden;
+  background: #f8f9fa;
+  border: 1px solid #e8eef2; /* border */
+}
+.post-hero img{
+  width: 100%;
+  height: clamp(220px, 45vh, 520px);
+  object-fit: cover;
+  object-position: center;
+  display: block;
+}
+
+/* Comments list */
+.comment{
+  padding: .5rem 0;
+  border-bottom: 1px solid #e8eef2; /* border */
+}
+.comment:last-child{
+  border-bottom: 0;
+}
+.comment .meta{
+  color: #9aabb3;           
+  font-size: .85rem;
+  margin-bottom: .2rem;
+}
+
+/* Comment input row */
+.comment-form .input-group .form-control{
+  border-top-left-radius: .6rem;
+  border-bottom-left-radius: .6rem;
+}
+.comment-form .btn{
+  border-top-right-radius: .6rem;
+  border-bottom-right-radius: .6rem;
+}
+
+/*  Utility helpers  */
+
+.text-muted-soft{ color: #9aabb3 !important; }         
+.border-subtle { border-color: #e8eef2 !important; }    /* border */
+
+.owner-only{
+  background: #fffdf3;
+  border: 1px dashed #f2e6a0;
+  border-radius: .5rem;
+  padding: .5rem .75rem;
+}
