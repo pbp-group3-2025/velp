@@ -1,7 +1,6 @@
 console.log('posts.js loaded');
 
 document.addEventListener('DOMContentLoaded', () => {
-  /* ===== CSRF helpers ===== */
   function getCookie(name) {
     const m = document.cookie.match('(^|;)\\s*' + name + '\\s*=\\s*([^;]+)');
     return m ? m.pop() : '';
@@ -21,34 +20,52 @@ document.addEventListener('DOMContentLoaded', () => {
     return { ok: res.ok, json, res };
   }
 
-  /* ===== Create post (list page) ===== */
-  const createForm = document.querySelector('#create-form');
-  if (createForm && !createForm.dataset.boundExternal) {
-    createForm.dataset.boundExternal = '1';
+
+const createForm = document.querySelector('#create-form');
+if (createForm) {
+
+  if (!createForm.dataset.bound) {
+    createForm.dataset.bound = '1';
     createForm.addEventListener('submit', async (e) => {
       e.preventDefault();
-      const { ok, json } = await postForm(createForm.action, createForm);
-      if (!ok) {
-        alert('Failed to create post: ' + JSON.stringify(json));
-        return;
-      }
-      if (json && typeof json.html === 'string') {
-        const feed = document.getElementById('feed');
-        if (!feed) return;
-        // remove empty text if present
-        document.getElementById('feed-empty')?.remove();
 
-        const tpl = document.createElement('template');
-        tpl.innerHTML = json.html.trim();
-        feed.prepend(tpl.content.firstElementChild);
-        createForm.reset();
-      } else {
-        window.location.reload(); // fallback
+   
+      if (createForm.dataset.submitting === '1') return;
+      createForm.dataset.submitting = '1';
+
+      const btn = createForm.querySelector('#post-btn');
+      if (btn) { btn.disabled = true; btn.textContent = 'Posting…'; }
+
+      try {
+        const { ok, json } = await postForm(createForm.action, createForm);
+        if (!ok) {
+          alert('Failed to create post: ' + JSON.stringify(json));
+          return;
+        }
+
+   
+        if (json && typeof json.html === 'string') {
+          const feed = document.getElementById('feed');
+          if (feed) {
+            document.getElementById('feed-empty')?.remove();
+            const tpl = document.createElement('template');
+            tpl.innerHTML = json.html.trim();
+            feed.prepend(tpl.content.firstElementChild);
+          }
+          createForm.reset();
+        } else {
+  
+          window.location.reload();
+        }
+      } finally {
+        createForm.dataset.submitting = '0';
+        if (btn) { btn.disabled = false; btn.textContent = 'Post'; }
       }
-    });
+    }, { passive: false });
   }
+}
 
-  /* ===== Like toggle (list & detail) ===== */
+
   document.addEventListener('click', async (e) => {
     const btn = e.target.closest('.btn-like');
     if (!btn) return;
@@ -68,7 +85,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  /* ===== Delete post (list page) ===== */
   document.addEventListener('click', async (e) => {
     const del = e.target.closest('.btn-del, .btn-delete-post');
     if (!del) return;
@@ -94,9 +110,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  /* ===== Comments (detail page) ===== */
-
-  // If a legacy template inserted an "empty" row, remove it once we add a real comment.
   function removeEmptyCommentsIfAny() {
     const list = document.getElementById('comment-list');
     if (!list) return;
@@ -110,7 +123,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const commentForm = document.querySelector('#comment-form');
   if (commentForm) {
-    // create comment
     commentForm.addEventListener('submit', async (e) => {
       e.preventDefault();
       const input = commentForm.querySelector('input[name="body"]');
@@ -139,7 +151,6 @@ document.addEventListener('DOMContentLoaded', () => {
       commentForm.reset();
     });
 
-    // delete comment (do NOT re-add any placeholder)
     document.addEventListener('click', async (e) => {
       const btn = e.target.closest('.btn-del-comment');
       if (!btn) return;
@@ -153,7 +164,6 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
       }
       document.getElementById(`c-${id}`)?.remove();
-      // Intentionally do nothing else: no placeholder should appear.
     });
   }
 });
