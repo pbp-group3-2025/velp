@@ -37,9 +37,9 @@ def create_report(request):
         return JsonResponse({"ok": False, "message": "Invalid form", "errors": form.errors}, status=400)
 
     target_type = form.cleaned_data["target_type"]
-    object_id   = form.cleaned_data["object_id"]
-    reason      = form.cleaned_data["reason"]
-    details     = form.cleaned_data.get("details", "")
+    object_id = form.cleaned_data["object_id"]
+    reason = form.cleaned_data["reason"]
+    details = form.cleaned_data.get("details", "")
 
     model_cls = TARGET_MODEL.get(target_type)
     if model_cls is None:
@@ -70,13 +70,13 @@ def create_report(request):
 @login_required
 def my_reports(request):
     qs = Report.objects.filter(reporter=request.user).distinct().order_by('-created_at')
-    return render(request, 'reports/my_reports.html', {'reports': qs})  # <-- no leading slash
+    return render(request, 'reports/my_reports.html', {'reports': qs})
 
 
 @login_required
 def mod_list(request):
     if not (request.user.is_staff or request.user.is_superuser):
-        return HttpResponseForbidden("Forbidden")  # <-- correct response
+        return HttpResponseForbidden("Forbidden")  # this is the correct response
 
     qs = Report.objects.select_related("reporter", "handled_by").order_by("-created_at")
     q = request.GET.get("q")
@@ -118,12 +118,12 @@ def update_report_status(request, pk: int):
         return HttpResponseBadRequest("Invalid status")
 
     report.set_status(new_status, request.user)
-    return redirect('reports:mod_list')  # <-- fixed namespace
+    return redirect('reports:mod_list')
 
-@require_POST  # Ensures this view only accepts POST requests
+@require_POST 
 @login_required
 def delete_report(request, id):
-    # Get the report, but only if the logged-in user is the reporter
+    # If the logged-in user is the reporter, get the report
     report = get_object_or_404(Report, id=id, reporter=request.user)
     
     # Only allow deletion if the report is not locked
@@ -133,4 +133,4 @@ def delete_report(request, id):
     else:
         messages.error(request, 'You cannot delete a report that is already locked.')
         
-    return redirect('reports:my_reports') # Redirect back to the "My Reports" page
+    return redirect('reports:my_reports')

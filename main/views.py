@@ -32,9 +32,7 @@ def show_main(request):
 
 
     context = {
-        'npm' : '2406365370',
         'name': request.user.username,
-        'class': 'PBP KKI',
         'venue_list': venue_list,
         'last_login': request.COOKIES.get('last_login', 'Never')
     }
