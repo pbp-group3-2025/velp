@@ -24,21 +24,18 @@
   <button>Logout</button>
 </a>
 
-
 <h5>Last login session: {{ last_login }}</h5>
 <hr>
 
-
-<!-- <a href="?filter=all">
-    <button type="button">All Articles</button>
-</a>
-<a href="?filter=my">
-    <button type="button">My Articles</button>
-</a> -->
-
+<div class="mb-3">
+    <strong>Filter by:</strong>
+    <a href="{% url 'main:show_main' %}?filter=all" class="btn btn-sm btn-primary">All</a>
+    <a href="{% url 'main:show_main' %}?filter=pitch" class="btn btn-sm btn-secondary">Pitch</a>
+    <a href="{% url 'main:show_main' %}?filter=stadium" class="btn btn-sm btn-secondary">Stadium</a>
+    <a href="{% url 'main:show_main' %}?filter=sports_centre" class="btn btn-sm btn-secondary">Sports Centre</a>
+</div>
 
 <b><p>Scroll through our list of venues!</p></b>
-
 
 {% if not venue_list %}
     <p>No venue data available in Velp.</p>

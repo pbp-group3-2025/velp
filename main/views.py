@@ -21,22 +21,22 @@ from django.core.exceptions import ValidationError
 @login_required(login_url='/login')
 def show_main(request):
 
-
-    filter_type = request.GET.get("filter", "all")  # default 'all'
-
-
-    if filter_type == "all":
-        venue_list = Venue.objects.all()
-    else:
-        venue_list = Venue.objects.filter(user=request.user)
-
+    venue_list = Venue.objects.all() 
+    
+    # Get filter, default is 'all'
+    filter_type = request.GET.get("filter", "all") 
+    
+    valid_filters = ['pitch', 'stadium', 'sports_centre']
+    if filter_type in valid_filters:
+        venue_list = venue_list.filter(leisure=filter_type) 
+    
+    venue_list = venue_list.order_by('name')
 
     context = {
         'name': request.user.username,
         'venue_list': venue_list,
         'last_login': request.COOKIES.get('last_login', 'Never')
     }
-
 
     return render(request, "main.html", context)
 
