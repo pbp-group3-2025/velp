@@ -17,7 +17,6 @@
   {% if user.is_authenticated %}
     <div>
       <span>Welcome, {{ name|default:user.username }}</span>
-      <span>{{ npm|default:"Student" }} - {{ class|default:"Class" }}</span>
       <a href="{% url 'main:logout' %}">Logout</a>
     </div>
   {% else %}
