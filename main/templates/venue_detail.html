@@ -33,6 +33,7 @@
   </p>
 {% endif %}
 
+<p>Report this venue?</p>
 {% if user.is_authenticated %}
     {% include "reports/report_button.html" with obj=venue target_type="venue" %}
 {% endif %}
@@ -52,6 +53,7 @@
     </a>
     {% endif %}
 
+    <p>Report this review?</p>
     {% if user.is_authenticated %}
       {% include "reports/report_button.html" with obj=review target_type="review" %}
     {% endif %}
