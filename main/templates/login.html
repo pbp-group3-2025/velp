@@ -26,8 +26,7 @@
   {% if messages %}
   <ul>
     {% for message in messages %}
-      {% set message_string = message|string %}
-      {% if 'Booking' not in message_string and 'review' not in message_string %}
+      {% if 'Booking' not in message|string and 'review' not in message|string %}
       <li>{{ message }}</li>
       {% endif %}
     {% endfor %}
