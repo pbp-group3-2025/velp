@@ -5,9 +5,10 @@ from django.shortcuts import get_object_or_404, render, redirect
 from django.db.models import Q
 from django.core.paginator import Paginator
 from django.contrib.contenttypes.models import ContentType
-
+from django.db import IntegrityError
 from .models import Report
 from .forms import ReportUpdateForm, ReportCreateForm
+from django.contrib import messages
 
 # If you don't want clients to send content_type at all:
 # map target_type -> model class
@@ -33,7 +34,6 @@ TARGET_MODEL = {
 def create_report(request):
     form = ReportCreateForm(request.POST)
     if not form.is_valid():
-        # TEMP: return detailed errors so you can see the exact field failing
         return JsonResponse({"ok": False, "message": "Invalid form", "errors": form.errors}, status=400)
 
     target_type = form.cleaned_data["target_type"]
@@ -41,7 +41,6 @@ def create_report(request):
     reason      = form.cleaned_data["reason"]
     details     = form.cleaned_data.get("details", "")
 
-    # resolve model on server (don’t accept content_type from client)
     model_cls = TARGET_MODEL.get(target_type)
     if model_cls is None:
         return JsonResponse({"ok": False, "message": "Invalid target type."}, status=400)
@@ -51,30 +50,26 @@ def create_report(request):
 
     content_type = ContentType.objects.get_for_model(model_cls, for_concrete_model=False)
 
-    if Report.objects.filter(
-        reporter=request.user,
-        content_type=content_type,
-        object_id=object_id,
-        status=Report.Status.OPEN,
-    ).exists():
+    try:
+        Report.objects.create(
+            reporter=request.user,
+            content_type=content_type,
+            object_id=object_id,
+            target_type=target_type,
+            reason=reason,
+            details=details,
+            status=Report.Status.OPEN,
+        )
+    except IntegrityError:
         return JsonResponse({"ok": False, "message": "You already have an open report for this item."}, status=409)
-
-    Report.objects.create(
-        reporter=request.user,
-        content_type=content_type,
-        object_id=object_id,
-        target_type=target_type,
-        reason=reason,
-        details=details,
-        status=Report.Status.OPEN,
-    )
+    
     return JsonResponse({"ok": True, "message": "Thanks! Your report has been submitted."}, status=201)
 
 
 
 @login_required
 def my_reports(request):
-    qs = Report.objects.filter(reporter=request.user).order_by('-created_at')
+    qs = Report.objects.filter(reporter=request.user).distinct().order_by('-created_at')
     return render(request, 'reports/my_reports.html', {'reports': qs})  # <-- no leading slash
 
 
@@ -124,3 +119,18 @@ def update_report_status(request, pk: int):
 
     report.set_status(new_status, request.user)
     return redirect('reports:mod_list')  # <-- fixed namespace
+
+@require_POST  # Ensures this view only accepts POST requests
+@login_required
+def delete_report(request, id):
+    # Get the report, but only if the logged-in user is the reporter
+    report = get_object_or_404(Report, id=id, reporter=request.user)
+    
+    # Only allow deletion if the report is not locked
+    if not report.is_locked:
+        report.delete()
+        messages.success(request, 'Your report has been successfully deleted.')
+    else:
+        messages.error(request, 'You cannot delete a report that is already locked.')
+        
+    return redirect('reports:my_reports') # Redirect back to the "My Reports" page

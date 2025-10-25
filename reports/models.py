@@ -62,8 +62,11 @@ class Report(models.Model):
         self.save(update_fields=["status", "handled_by", "resolved_at"])
 
     class Meta:
-        # 👇 IMPORTANT: reuse the existing table from the reports app
         db_table = "reports"
         indexes = [
             models.Index(fields=["content_type", "object_id", "status"]),
+        ]
+
+        unique_together = [
+            ['reporter', 'content_type', 'object_id', 'status']
         ]
