@@ -26,7 +26,9 @@
   {% if messages %}
   <ul>
     {% for message in messages %}
-    <li>{{ message }}</li>
+      {% if 'Booking' not in message.tags and 'reviewed' not in message.tags %}
+      <li>{{ message }}</li>
+      {% endif %}
     {% endfor %}
   </ul>
   {% endif %} Don't have an account yet?
