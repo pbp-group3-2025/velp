@@ -210,7 +210,7 @@ def create_booking(request, id):
 @login_required(login_url='/login')
 def booking_list(request):
     bookings = Booking.objects.filter(user=request.user).order_by('-date', 'start_time')
-    return render(request, "main/booking/booking_list.html", {"bookings": bookings})
+    return render(request, "booking/booking_list.html", {"bookings": bookings})
 
 
 @login_required(login_url='/login')
