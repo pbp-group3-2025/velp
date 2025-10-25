@@ -11,6 +11,7 @@
     <li><a href="{% url 'review:add_review_general' %}">Review</a></li>
     <li><a href="{% url 'community:group_list' %}">Community</a></li>
     <li><a href="{% url 'posts:list' %}">Posts</a></li>
+    <li><a href="{% url 'main:booking_list' %}">My Bookings</a></li>
   </ul>
 
   {% if user.is_authenticated %}
