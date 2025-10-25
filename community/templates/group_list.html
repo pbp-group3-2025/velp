@@ -2,6 +2,7 @@
 {% block title %}Community Groups{% endblock %}
 
 {% block content %}
+<p><a href="{% url 'main:show_main' %}"><button>← Back to Venue List</button></a></p>
 <div class="d-flex justify-content-between align-items-center mb-3">
   <h2 class="h5 mb-0">Find, join & discuss with football groups</h2>
   <a class="btn btn-primary btn-sm" href="{% url 'community:create_group' %}">+ New Group</a>
