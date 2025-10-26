@@ -7,22 +7,45 @@
 
 <form method="post">
   {% csrf_token %}
-  {{ form.non_field_errors }}
+
+  {% if form.non_field_errors %}
+  <ul style="color:red; margin-bottom:1rem;">
+    {% for err in form.non_field_errors %}
+      <li>{{ err }}</li>
+    {% endfor %}
+  </ul>
+  {% endif %}
+
   <p>
     <label>Date</label><br>
     {{ form.date }}
+    {% if form.date.errors %}
+      <div style="color:red">{{ form.date.errors.0 }}</div>
+    {% endif %}
   </p>
+
   <p>
     <label>Start hour</label><br>
     {{ form.start_hour }}
+    {% if form.start_hour.errors %}
+      <div style="color:red">{{ form.start_hour.errors.0 }}</div>
+    {% endif %}
   </p>
+
   <p>
     <label>Duration (hours)</label><br>
     {{ form.duration_hours }}
+    {% if form.duration_hours.errors %}
+      <div style="color:red">{{ form.duration_hours.errors.0 }}</div>
+    {% endif %}
   </p>
+
   <p>
     <label>Payment method</label><br>
     {{ form.payment_method }}
+    {% if form.payment_method.errors %}
+      <div style="color:red">{{ form.payment_method.errors.0 }}</div>
+    {% endif %}
   </p>
 
   <button type="submit">Create Booking</button>
@@ -30,3 +53,4 @@
 
 <p><a href="{% url 'main:show_venue' venue.id %}">← Back to venue</a></p>
 {% endblock %}
+

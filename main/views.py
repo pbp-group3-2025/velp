@@ -214,6 +214,12 @@ def booking_list(request):
 @login_required(login_url='/login')
 def booking_confirm(request, pk):
     booking = get_object_or_404(Booking, pk=pk, user=request.user)
+
+    if request.method == "POST" and booking.status == "PENDING":
+        booking.status = "CONFIRMED"
+        booking.save()
+        return redirect("main:booking_list")
+
     return render(request, "booking/booking_confirm.html", {"booking": booking})
 
 
