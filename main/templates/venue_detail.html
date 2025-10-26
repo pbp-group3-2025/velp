@@ -39,6 +39,7 @@
 {% endif %}
 
 {% for review in venue.reviews.all %}
+  <hr>
   <p><strong>{{ review.user.username }}</strong> : {{ review.average_rating }}/5</p>
   <p>{{ review.comment }}</p>
 
@@ -58,11 +59,11 @@
       {% include "reports/report_button.html" with obj=review target_type="review" %}
     {% endif %}
 
-  <hr>
 {% empty %}
   <p>No review at the moment.</p>
 {% endfor %}
-
+<p></p>
+<hr>
 <a href="{% url 'review:add_review' venue.id %}" class="btn btn-primary">
   Add a review
 </a>
