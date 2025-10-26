@@ -21,24 +21,22 @@ from django.core.exceptions import ValidationError
 @login_required(login_url='/login')
 def show_main(request):
 
-
-    filter_type = request.GET.get("filter", "all")  # default 'all'
-
-
-    if filter_type == "all":
-        venue_list = Venue.objects.all()
-    else:
-        venue_list = Venue.objects.filter(user=request.user)
-
+    venue_list = Venue.objects.all() 
+    
+    # Get filter, default is 'all'
+    filter_type = request.GET.get("filter", "all") 
+    
+    valid_filters = ['pitch', 'stadium', 'sports_centre']
+    if filter_type in valid_filters:
+        venue_list = venue_list.filter(leisure=filter_type) 
+    
+    venue_list = venue_list.order_by('name')
 
     context = {
-        'npm' : '2406365370',
         'name': request.user.username,
-        'class': 'PBP KKI',
         'venue_list': venue_list,
         'last_login': request.COOKIES.get('last_login', 'Never')
     }
-
 
     return render(request, "main.html", context)
 
@@ -216,6 +214,12 @@ def booking_list(request):
 @login_required(login_url='/login')
 def booking_confirm(request, pk):
     booking = get_object_or_404(Booking, pk=pk, user=request.user)
+
+    if request.method == "POST" and booking.status == "PENDING":
+        booking.status = "CONFIRMED"
+        booking.save()
+        return redirect("main:booking_list")
+
     return render(request, "booking/booking_confirm.html", {"booking": booking})
 
 

@@ -3,6 +3,7 @@
 {% block meta %}<title>{{ title }}</title>{% endblock meta %}
 
 {% block content %}
+<p><a href="{% url 'posts:list' %}"><button>← Back to Posts List</button></a></p>
 <div class="container py-4" style="max-width:700px">
   <h4 class="mb-3">{{ title }}</h4>
   <form method="post">

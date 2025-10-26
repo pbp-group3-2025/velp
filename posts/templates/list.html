@@ -94,33 +94,4 @@
 </div>
 
 <script src="{% static 'posts/posts.js' %}?v=5" defer></script>
-
-<script>
-document.addEventListener('DOMContentLoaded', () => {
-  const form = document.getElementById('create-form');
-  if (!form) return;
-  if (form.dataset.boundInline) return;        
-
-  form.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
-    const res = await fetch(form.action, {
-      method: 'POST',
-      headers: { 'X-CSRFToken': csrftoken },
-      body: new FormData(form)
-    });
-    const data = await res.json().catch(() => ({}));
-    if (res.ok && data.html) {
-      const feed = document.getElementById('feed');
-      document.getElementById('feed-empty')?.remove();
-      const tpl = document.createElement('template');
-      tpl.innerHTML = data.html.trim();
-      feed.prepend(tpl.content.firstElementChild);
-      form.reset();
-    } else {
-      alert('Failed to create post.');
-    }
-  });
-});
-</script>
 {% endblock content %}

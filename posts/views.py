@@ -9,21 +9,33 @@ from django.template.loader import render_to_string
 from .models import Post, Comment
 from .forms import PostForm, CommentForm
 
+
 @login_required
 def post_list(request):
     q = (request.GET.get("q") or "").strip()
-    qs = Post.objects.select_related("author")
+    
+    qs = (
+        Post.objects.select_related("author")
+        .order_by("-created_at")
+    )
     if q:
         qs = qs.filter(Q(content__icontains=q) | Q(venue_hint__icontains=q))
-    qs = qs.order_by("-created_at")
 
-    page_obj = Paginator(qs, 10).get_page(request.GET.get("page"))
+    page_str = request.GET.get("page") or "1"
+    try:
+        page_num = int(page_str)
+    except ValueError:
+        page_num = 1
+
+    page_obj = Paginator(qs, 10).get_page(page_num)
     return render(request, "list.html", {"page_obj": page_obj, "q": q})
+
 
 @login_required
 def post_detail(request, pk):
     post = get_object_or_404(Post, pk=pk)
     return render(request, 'detail.html', {'post': post, 'comment_form': CommentForm()})
+
 
 @login_required
 def post_update(request, pk):
@@ -36,8 +48,11 @@ def post_update(request, pk):
         return redirect('posts:detail', pk=pk)
     return render(request, 'form.html', {'form': form, 'title': 'Edit Post'})
 
+
 @login_required
+@require_POST
 def post_delete(request, pk):
+    """Page-level delete (POST-only) then redirect back to list."""
     post = get_object_or_404(Post, pk=pk)
     if post.author != request.user:
         return HttpResponseForbidden("Only the author can delete this post.")
@@ -47,10 +62,11 @@ def post_delete(request, pk):
 @login_required
 def api_post_list(request):
     q = (request.GET.get('q') or '').strip()
-    qs = Post.objects.all().select_related('author').annotate(
+    qs = Post.objects.select_related('author').annotate(
         like_count=Count('likes', distinct=True),
         comment_count=Count('comments', distinct=True),
-    )
+    ).order_by('-created_at')
+
     if q:
         qs = qs.filter(Q(content__icontains=q) | Q(venue_hint__icontains=q))
 
@@ -66,10 +82,11 @@ def api_post_list(request):
             'updated_at': p.updated_at.strftime('%Y-%m-%d %H:%M'),
             'like_count': p.like_count,
             'comment_count': p.comment_count,
-            'is_liked': p.likes.filter(id=uid).exists(),  # M2M check
+            'is_liked': p.likes.filter(id=uid).exists(),
             'is_owner': p.author_id == uid,
         })
     return JsonResponse(data, safe=False)
+
 
 @login_required
 @require_POST
@@ -84,6 +101,7 @@ def api_post_update(request, pk):
         return JsonResponse({'detail': 'UPDATED', 'html': html})
     return JsonResponse({'detail': form.errors.as_json()}, status=400)
 
+
 @login_required
 @require_POST
 def api_post_delete(request, pk):
@@ -92,6 +110,7 @@ def api_post_delete(request, pk):
         return JsonResponse({'detail': 'FORBIDDEN'}, status=403)
     post.delete()
     return JsonResponse({'detail': 'DELETED'})
+
 
 @login_required
 @require_POST
@@ -105,6 +124,7 @@ def api_like_toggle(request, pk):
         post.likes.add(user)
         liked = True
     return JsonResponse({'liked': liked, 'count': post.likes.count()})
+
 
 @login_required
 @require_POST
@@ -126,6 +146,7 @@ def api_comment_create(request, pk):
         }, status=201)
     return JsonResponse({'detail': form.errors.as_json()}, status=400)
 
+
 @login_required
 @require_POST
 def api_comment_delete(request, cid):
@@ -137,13 +158,15 @@ def api_comment_delete(request, cid):
     return JsonResponse({'detail': 'DELETED', 'count': post.comments.count()})
 
 
+@login_required
+@require_POST
 def api_create(request):
-    if request.method != "POST":
-        return JsonResponse({"detail": "Method not allowed"}, status=405)
+    """AJAX create post, returns rendered card HTML; POST-only & auth-only."""
     content = (request.POST.get("content") or "").strip()
     venue_hint = (request.POST.get("venue_hint") or "").strip()
     if not content:
         return JsonResponse({"detail": "Content is required"}, status=400)
+
     p = Post.objects.create(author=request.user, content=content, venue_hint=venue_hint)
     html = render_to_string("partials/card.html", {"p": p, "user": request.user})
     return JsonResponse({"html": html}, status=201)

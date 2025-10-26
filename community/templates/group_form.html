@@ -11,7 +11,8 @@
 
       <form method="post"
             action="{% if group %}{% url 'community:edit_group' group.slug %}{% else %}{% url 'community:create_group' %}{% endif %}"
-            data-ajax="group-form">
+            data-ajax="group-form"
+            data-redirect="{% url 'community:group_list' %}">
         {% csrf_token %}
         {{ form.as_p }}
         <div class="d-flex gap-2">

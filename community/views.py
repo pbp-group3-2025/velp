@@ -38,31 +38,57 @@ def create_group(request):
             g = form.save(commit=False)
             g.owner = request.user
             g.save()
+
+            # make sure the creator is a member too
             Membership.objects.get_or_create(group=g, user=request.user)
+
+            # if this was an AJAX submit, go to the list
             if is_ajax(request):
-                return JsonResponse({"ok": True, "redirect": reverse("community:group_detail", args=[g.slug])})
-            return redirect("community:group_detail", slug=g.slug)
+                return JsonResponse({
+                    "ok": True,
+                    "redirect": reverse("community:group_list")
+                })
+
+            # normal (non-AJAX) submit: just redirect to the list page
+            return redirect("community:group_list")
+
+        # form not valid
         else:
             if is_ajax(request):
-                return JsonResponse({"ok": False, "error": "Invalid form"}, status=400)
+                return JsonResponse(
+                    {"ok": False, "error": "Invalid form"},
+                    status=400
+                )
+
     else:
         form = GroupForm()
-    return render(request, "group_form.html", {"form": form})
 
+    # GET or invalid POST -> re-render the form
+    return render(request, "group_form.html", {"form": form})
 
 
 @login_required
 def edit_group(request, slug):
     group = get_object_or_404(Group, slug=slug)
+    #Only the owner can edit
     if not group.is_owner(request.user):
         return HttpResponseForbidden("Only owner can edit.")
+
     form = GroupForm(request.POST or None, instance=group)
+
     if request.method == "POST" and form.is_valid():
         form.save()
         if is_ajax(request):
-            return JsonResponse({"ok": True, "redirect": reverse("community:group_detail", args=[group.slug])})
-        return redirect("community:group_detail", slug=group.slug)
-    return render(request, "group_edit.html", {"form": form, "group": group})
+            return JsonResponse({
+                "ok": True,
+                "redirect": reverse("community:group_list"),
+            })
+        return redirect("community:group_list")
+    return render(request, "group_edit.html", {
+        "form": form,
+        "group": group,
+    })
+
 @login_required
 def delete_group(request, slug):
     group = get_object_or_404(Group, slug=slug)

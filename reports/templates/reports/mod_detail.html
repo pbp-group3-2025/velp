@@ -1,0 +1,131 @@
+{% extends "base.html" %}
+
+{% block title %}Report #{{ report.id }}{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+
+  <div class="d-flex align-items-center justify-content-between mb-3">
+    <div class="d-flex align-items-center gap-2">
+      <a href="{% url 'reports:mod_list' %}" class="btn btn-outline-secondary btn-sm">← Back</a>
+      <h1 class="h5 mb-0">Report #{{ report.id }}</h1>
+    </div>
+
+    <div class="d-flex align-items-center gap-2">
+      {% if report.status == 'open' %}
+        <span class="badge text-bg-warning text-uppercase">Open</span>
+      {% elif report.status == 'under_review' %}
+        <span class="badge text-bg-info text-uppercase">Under Review</span>
+      {% elif report.status == 'resolved' %}
+        <span class="badge text-bg-success text-uppercase">Resolved</span>
+      {% elif report.status == 'rejected' %}
+        <span class="badge text-bg-danger text-uppercase">Rejected</span>
+      {% endif %}
+      {% if report.is_locked %}
+        <span class="badge text-bg-secondary text-uppercase">Locked</span>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="row g-3">
+    <div class="col-lg-8">
+      <div class="card">
+        <div class="card-body">
+          <div class="mb-2 text-muted small">
+            <strong>Type:</strong>
+            {{ report.get_target_type_display|default:report.target_type|default:report.content_type.model }}
+            {% if report.object_id %} • <strong>Object ID:</strong> {{ report.object_id }}{% endif %}
+            {% if target_obj %}
+              • <strong>Name:</strong> {% firstof target_obj.name target_obj.title target_obj.username target_obj %}
+            {% endif %}
+          </div>
+
+          <h2 class="h6 mb-2">Reason</h2>
+          <p class="mb-3">{{ report.get_reason_display|default:report.reason }}</p>
+
+          <h2 class="h6 mb-2">Details</h2>
+          <p class="mb-0">{{ report.details|default:"(no details)" }}</p>
+        </div>
+      </div>
+
+      <div class="card mt-3">
+        <div class="card-body">
+          <h2 class="h6 mb-2">Target</h2>
+          {% if target_obj %}
+            <div class="mb-1">
+              <strong>Name:</strong>
+              {% firstof target_obj.name target_obj.title target_obj.username target_obj %}
+            </div>
+            <div class="mb-1">
+              <strong>Resolved object:</strong> {{ target_obj|default_if_none:"-" }}
+            </div>
+          {% else %}
+            <div class="text-muted">Target no longer available or cannot be resolved.</div>
+          {% endif %}
+        </div>
+      </div>
+
+      <div class="card mt-3">
+        <div class="card-body">
+          <h2 class="h6">Moderation Actions</h2>
+          <div class="d-flex flex-wrap gap-2 mt-2">
+            {% if report.status != 'resolved' %}
+              <form method="post" action="{% url 'reports:update_status' report.id %}" class="d-inline">
+                {% csrf_token %}
+                <input type="hidden" name="status" value="resolved">
+                <button type="submit" class="btn btn-success btn-sm">Resolve</button>
+              </form>
+            {% endif %}
+
+            {% if report.status != 'rejected' %}
+              <form method="post" action="{% url 'reports:update_status' report.id %}"
+                    onsubmit="return confirm('Reject this report?');"
+                    class="d-inline">
+                {% csrf_token %}
+                <input type="hidden" name="status" value="rejected">
+                <button type="submit" class="btn btn-danger btn-sm">Reject</button>
+              </form>
+            {% endif %}
+
+            {% if report.status != 'under_review' %}
+              <form method="post" action="{% url 'reports:update_status' report.id %}" class="d-inline">
+                {% csrf_token %}
+                <input type="hidden" name="status" value="under_review">
+                <button type="submit" class="btn btn-warning btn-sm">Mark Under Review</button>
+              </form>
+            {% endif %}
+          </div>
+
+          <p class="small text-muted mt-2 mb-0">
+            Only <code>resolved</code>, <code>rejected</code>, and <code>under_review</code> are accepted by the server.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-4">
+      <div class="card">
+        <div class="card-body">
+          <h2 class="h6 mb-2">Metadata</h2>
+          <ul class="list-unstyled mb-0 small">
+            <li><strong>Reporter:</strong> {{ report.reporter.username }}</li>
+            <li><strong>Created:</strong> {{ report.created_at|date:"M j, Y H:i" }}</li>
+            {% if report.resolved_at %}
+              <li><strong>Resolved:</strong> {{ report.resolved_at|date:"M j, Y H:i" }}</li>
+            {% endif %}
+            {% if report.handled_by %}
+              <li><strong>Handled by:</strong> {{ report.handled_by.username }}</li>
+            {% endif %}
+            <li><strong>ContentType:</strong> {{ report.content_type.app_label }}.{{ report.content_type.model }}</li>
+            <li><strong>Object ID:</strong> {{ report.object_id }}</li>
+            {% if report.is_locked %}
+              <li><strong>Locked:</strong> Yes</li>
+            {% endif %}
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}
