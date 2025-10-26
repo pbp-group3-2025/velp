@@ -26,6 +26,9 @@
           Like <span class="badge bg-primary" data-like-count>{{ p.likes.count }}</span>
         </button>
         <a class="btn btn-sm btn-outline-secondary" href="{% url 'posts:detail' p.id %}">Comments</a>
+        {% if user.is_authenticated %}
+          {% include "reports/report_button.html" with obj=p target_type="post" %}
+        {% endif %}
       </div>
     </div>
   </div>

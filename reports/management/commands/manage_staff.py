@@ -21,12 +21,14 @@ class Command(BaseCommand):
             user = User.objects.get(username=username)
             if options['remove']:
                 user.is_staff = False
+                user.is_superuser = False
                 user.save()
                 self.stdout.write(
                     self.style.SUCCESS(f'Successfully removed staff status from {username}')
                 )
             else:
                 user.is_staff = True
+                user.is_superuser = True
                 user.save()
                 self.stdout.write(
                     self.style.SUCCESS(f'Successfully made {username} a staff member')

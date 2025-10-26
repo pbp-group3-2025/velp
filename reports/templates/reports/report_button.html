@@ -1,5 +1,3 @@
-{% load report_tags humanize %}
-
 {# templates/report_button.html #}
 {# Usage: {% include "reports/report_button.html" with obj=venue target_type="venue" %} #}
 <button
@@ -64,122 +62,150 @@
 </div>
 
 <script>
-document.addEventListener('DOMContentLoaded', () => {
-  const modalEl = document.getElementById('reportModal');
-  if (!modalEl) return; // guard if modal isn't present
+(() => {
+  // Global guard: if this script is included twice, bail out on the second run
+  if (window.__reportModalInit) return;
+  window.__reportModalInit = true;
 
-  const formEl       = document.getElementById('reportForm');
-  const feedbackEl   = document.getElementById('reportFeedback');
-  const submitBtnEl  = document.getElementById('reportSubmitBtn');
-  const modeEl       = document.getElementById('report-mode');
-  const titleEl      = document.getElementById('reportModalTitle');
-  const objectIdEl   = document.getElementById('report-object-id');
-  const targetTypeEl = document.getElementById('report-target-type');
-  const reasonEl     = document.getElementById('report-reason');
-  const detailsEl    = document.getElementById('report-details');
+  document.addEventListener('DOMContentLoaded', () => {
+    const modalEl = document.getElementById('reportModal');
+    if (!modalEl) return;
 
-  // CSRF helper
-  function getCookie(name) {
-    const value = `; ${document.cookie}`;
-    const parts = value.split(`; ${name}=`);
-    if (parts.length === 2) return decodeURIComponent(parts.pop().split(';').shift());
-  }
-  const csrftoken = getCookie('csrftoken');
+    const formEl       = document.getElementById('reportForm');
+    const feedbackEl   = document.getElementById('reportFeedback');
+    const submitBtnEl  = document.getElementById('reportSubmitBtn');
+    const modeEl       = document.getElementById('report-mode');
+    const titleEl      = document.getElementById('reportModalTitle');
+    const objectIdEl   = document.getElementById('report-object-id');
+    const targetTypeEl = document.getElementById('report-target-type');
+    const reasonEl     = document.getElementById('report-reason');
+    const detailsEl    = document.getElementById('report-details');
 
-  // Prefill modal when opening
-  modalEl.addEventListener('show.bs.modal', (evt) => {
-    const btn = evt.relatedTarget;
-    if (!btn) return;
+    // Per-element guard: never bind twice even if DOMContentLoaded fires again (rare)
+    if (formEl.dataset.bound === '1') return;
+    formEl.dataset.bound = '1';
 
-    // Fill hidden inputs from button data
-    objectIdEl.value   = btn.dataset.objectId || '';
-    targetTypeEl.value = btn.dataset.targetType || '';
-    console.log('prefill -> object_id:', objectIdEl.value, 'target_type:', targetTypeEl.value);
+    // CSRF helpers
+    function getCookie(name) {
+      const value = `; ${document.cookie}`;
+      const parts = value.split(`; ${name}=`);
+      if (parts.length === 2) return decodeURIComponent(parts.pop().split(';').shift());
+    }
+    function getCsrfToken() {
+      const input = formEl.querySelector('input[name="csrfmiddlewaretoken"]');
+      return (input && input.value) || getCookie('csrftoken') || '';
+    }
 
-    feedbackEl.classList.add('d-none');
-    feedbackEl.textContent = '';
+    // Fill modal on open
+    modalEl.addEventListener('show.bs.modal', (evt) => {
+      const btn = evt.relatedTarget;
+      if (!btn) return;
 
-    // Edit vs Create mode
-    if (btn.hasAttribute('data-edit-report')) {
-      modeEl.value = 'edit';
-      titleEl.textContent = 'Edit your report';
-      formEl.action = btn.dataset.reportAction || formEl.action;
+      objectIdEl.value   = btn.dataset.objectId || '';
+      targetTypeEl.value = btn.dataset.targetType || '';
+      feedbackEl.classList.add('d-none');
+      feedbackEl.classList.remove('text-danger', 'text-success');
+      feedbackEl.textContent = '';
 
-      reasonEl.value  = btn.dataset.reportReason || 'inappropriate';
-      detailsEl.value = btn.dataset.reportDetails || '';
-      submitBtnEl.textContent = 'Save Changes';
-    } else {
-      modeEl.value = 'create';
-      titleEl.textContent = 'Report content';
+      if (btn.hasAttribute('data-edit-report')) {
+        modeEl.value = 'edit';
+        titleEl.textContent = 'Edit your report';
+        formEl.action = btn.dataset.reportAction || formEl.action;
+        reasonEl.value  = btn.dataset.reportReason || 'inappropriate';
+        detailsEl.value = btn.dataset.reportDetails || '';
+        submitBtnEl.textContent = 'Save Changes';
+      } else {
+        modeEl.value = 'create';
+        titleEl.textContent = 'Report content';
+        // reset fields (don’t call form.reset() here to preserve csrf token)
+        reasonEl.value  = 'inappropriate';
+        detailsEl.value = '';
+        submitBtnEl.textContent = 'Submit';
+      }
+    });
+
+    // Reset when closed
+    modalEl.addEventListener('hidden.bs.modal', () => {
+      // Keep CSRF field intact; reset only user fields
       reasonEl.value  = 'inappropriate';
       detailsEl.value = '';
-      submitBtnEl.textContent = 'Submit';
-    }
-  });
-
-  // Reset when closing
-  modalEl.addEventListener('hidden.bs.modal', () => {
-    formEl.reset();
-    feedbackEl.classList.add('d-none');
-    feedbackEl.textContent = '';
-  });
-
-  // Submit handler
-  formEl.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    submitBtnEl.disabled = true;
-
-    // Log all form fields for debugging
-    const fd = new FormData(formEl);
-    for (const [k, v] of fd.entries()) console.log('FD', k, v);
-
-    try {
-      const res = await fetch(formEl.action, {
-        method: 'POST',
-        headers: { 'X-CSRFToken': csrftoken }, // don't set Content-Type manually for FormData
-        body: fd,
-      });
-
-      let data;
-      try {
-        data = await res.json();
-      } catch {
-        data = { ok: false, message: await res.text() };
-      }
-
-      feedbackEl.classList.remove('d-none');
-
-      if (res.ok && data.ok) {
-        feedbackEl.classList.remove('text-danger');
-        feedbackEl.classList.add('text-success');
-        feedbackEl.textContent =
-          data.message || (modeEl.value === 'edit' ? 'Report updated.' : 'Report submitted.');
-
-        // Close modal and reload
-        setTimeout(() => {
-          bootstrap.Modal.getInstance(modalEl).hide();
-          window.location.reload();
-        }, 700);
-      } else {
-        console.error('Create report failed:', res.status, data);
-        feedbackEl.classList.remove('text-success');
-        feedbackEl.classList.add('text-danger');
-
-        // Show server validation errors if any
-        const msg =
-          data.errors
-            ? JSON.stringify(data.errors)
-            : data.message || 'Failed to process.';
-        feedbackEl.textContent = msg;
-      }
-    } catch (err) {
-      console.error('Network error:', err);
-      feedbackEl.classList.remove('d-none');
-      feedbackEl.classList.add('text-danger');
-      feedbackEl.textContent = 'Network error. Please try again.';
-    } finally {
+      feedbackEl.classList.add('d-none');
+      feedbackEl.classList.remove('text-danger', 'text-success');
+      feedbackEl.textContent = '';
       submitBtnEl.disabled = false;
-    }
+      submitting = false; // allow next submission after close
+    });
+
+    // Prevent double-submit + overlapping writes
+    let submitting = false;
+
+    formEl.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      if (submitting) return;              // guard 1: ignore second click
+      submitting = true;
+
+      submitBtnEl.disabled = true;
+
+      const fd = new FormData(formEl);
+
+      try {
+        const res = await fetch(formEl.action, {
+          method: 'POST',
+          headers: {
+            'X-CSRFToken': getCsrfToken(),
+            'X-Requested-With': 'XMLHttpRequest',
+          },
+          body: fd,                         // let browser set multipart/form-data
+          credentials: 'same-origin',
+        });
+
+        let data;
+        try { data = await res.json(); }
+        catch { data = { ok: false, message: await res.text() }; }
+
+        feedbackEl.classList.remove('d-none', 'text-success', 'text-danger');
+
+        if (res.ok && data.ok) {
+          feedbackEl.classList.add('text-success');
+          feedbackEl.textContent = data.message || (modeEl.value === 'edit' ? 'Report updated.' : 'Report submitted.');
+          setTimeout(() => {
+            const inst = bootstrap.Modal.getOrCreateInstance(modalEl);
+            inst.hide();
+            // Reload to reflect the new/updated report list
+            window.location.reload();
+          }, 650);
+          return;
+        }
+
+        // Error branch
+        feedbackEl.classList.add('text-danger');
+        const msg = data.errors
+          ? JSON.stringify(data.errors)
+          : (data.message || 'Failed to process.');
+        feedbackEl.textContent = msg;
+
+        // If backend returns existing_id on 409, surface a link
+        if (res.status === 409 && data.existing_id) {
+          const a = document.createElement('a');
+          a.href = `/report/my/?focus=${data.existing_id}`;
+          a.className = 'ms-1';
+          a.textContent = 'View existing report';
+          feedbackEl.appendChild(a);
+        }
+
+      } catch (err) {
+        console.error('Network error:', err);
+        feedbackEl.classList.remove('d-none', 'text-success');
+        feedbackEl.classList.add('text-danger');
+        feedbackEl.textContent = 'Network error. Please try again.';
+      } finally {
+        // Keep disabled briefly to avoid frantic re-clicks; re-enable only on error
+        if (feedbackEl.classList.contains('text-danger')) {
+          submitBtnEl.disabled = false;
+          submitting = false; // allow retry on error only
+        }
+      }
+    }, { once: true }); // guard 2: browser won’t add this listener again
   });
-});
+})();
 </script>

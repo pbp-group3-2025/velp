@@ -19,9 +19,9 @@
               data-redirect="{% url 'community:group_list' %}">
         Delete Group
       </button>
-      {% if user.is_authenticated %}
-        {% include "reports/report_button.html" with obj=group target_type="community" %}
-      {% endif %}
+    {% endif %}
+    {% if user.is_authenticated %}
+      {% include "reports/report_button.html" with obj=group target_type="community" %}
     {% endif %}
     <a class="btn btn-primary btn-sm" href="{% url 'community:create_post' group.slug %}">+ New Post</a>
   </div>
