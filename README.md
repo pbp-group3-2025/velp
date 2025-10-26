@@ -21,9 +21,9 @@ The proposed application is a web-based platform that provides comprehensive inf
 1. Review (Fanny)
 2. Venues (Admin) (Aldebaran)
 3. Community (Ghani)
-4. Book Venue (Adit)
+4. Book Venue (Gabriel)
 5. Posts (Tara)
-6. Report (Gabriel)
+6. Report (Adit)
 
 
 # Main product category initial dataset source
