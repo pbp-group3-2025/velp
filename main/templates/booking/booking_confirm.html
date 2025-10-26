@@ -10,5 +10,12 @@
 <p>Total: Rp {{ booking.total_price|intcomma }}</p>
 <p>Status: {{ booking.get_status_display }}</p>
 
+{% if booking.status == "PENDING" %}
+<form method="post">
+  {% csrf_token %}
+  <button type="submit">Confirm Booking</button>
+</form>
+{% endif %}
+
 <p><a href="{% url 'main:booking_list' %}">← Back to my bookings</a></p>
 {% endblock %}
