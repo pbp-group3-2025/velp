@@ -1,7 +1,7 @@
 from django.forms import ModelForm
 from main.models import Venue, Booking
 from django import forms
-from datetime import date, time
+from datetime import date, time, datetime
 
 
 class VenueForm(ModelForm):
@@ -38,18 +38,46 @@ class BookingForm(forms.ModelForm):
     def clean_date(self):
         d = self.cleaned_data['date']
         if d < date.today():
-            raise forms.ValidationError("Cannot book a date in the past.")
+            # Move this later into non-field errors — return None for now so clean() catches it
+            self._past_date_error = "Cannot book a date in the past."
         return d
 
     def clean(self):
         cleaned = super().clean()
+        errors = []
+
+        # --- move past date error into non-field section
+        if hasattr(self, "_past_date_error"):
+            errors.append(self._past_date_error)
+
+        d = cleaned.get("date")
         start_hour = cleaned.get("start_hour")
         duration = cleaned.get("duration_hours")
-        if start_hour is None or duration is None:
+
+        if not d or start_hour is None or duration is None:
+            if errors:
+                raise forms.ValidationError(errors)
             return cleaned
+
         start_hour = int(start_hour)
+        duration = int(duration)
+
+        # crossing midnight
         if start_hour + duration > 24:
-            raise forms.ValidationError("Booking must not cross midnight (end hour must be ≤ 24).")
+            errors.append("Booking must not cross midnight (end hour must be ≤ 24).")
+
+        # same-day past time
+        today = date.today()
+        now = datetime.now()
+
+        if d == today and start_hour < now.hour:
+            errors.append(
+                f"Cannot book hour {start_hour:02d}:00 — that time has already passed today."
+            )
+
+        if errors:
+            raise forms.ValidationError(errors)
+
         return cleaned
 
     def save(self, venue: Venue, user, commit=True):
