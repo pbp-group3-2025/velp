@@ -36,10 +36,6 @@
     {% endif %}
   {% endif %}
 
-{% if user.is_authenticated %}
-  {% include "reports/report_button.html" with obj=post target_type="community_post" %}
-{% endif %}
-
   <div class="mb-4">{{ post.content|linebreaksbr }}</div>
 
   <hr class="my-4">

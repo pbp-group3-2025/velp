@@ -16,7 +16,6 @@ from review.models import Review # adjust
 from posts.models import Post     # adjust
 from community.models import Group  # adjust
 from posts.models import Comment
-from community.models import Post as CommunityPost
 # from comments.models import Comment  # adjust
 
 TARGET_MODEL = {
@@ -25,7 +24,6 @@ TARGET_MODEL = {
     "post": Post,
     "community": Group,
     "comment": Comment,
-    "community_post": CommunityPost,
 }
 
 @require_POST

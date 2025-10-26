@@ -12,7 +12,6 @@ class Report(models.Model):
         POST = "post", "Post"
         COMMENT = "comment", "Comment"
         COMMUNITY = "community", "Community"
-        COMMUNITYPOST = "community_post", "Community Post"
         
 
     class Reason(models.TextChoices):
