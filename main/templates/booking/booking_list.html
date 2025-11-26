@@ -1,5 +1,5 @@
 {% extends 'base.html' %}
-{% load humanize %}
+{% load humanize static %}
 {% block content %}
 <h1>My Bookings</h1>
 
@@ -14,7 +14,7 @@
       Rp {{ b.total_price|intcomma }} — {{ b.get_status_display }}
       <a href="{% url 'main:booking_confirm' b.pk %}">view</a>
       {% if b.status != "CANCELLED" %}
-        <form action="{% url 'main:booking_cancel' b.pk %}" method="post" style="display:inline">
+        <form action="{% url 'main:booking_cancel' b.pk %}" method="post" class="ajax-form cancel-inline" style="display:inline">
           {% csrf_token %}
           <button type="submit">Cancel</button>
         </form>
@@ -24,4 +24,73 @@
     <li>No bookings yet.</li>
   {% endfor %}
 </ul>
+<script src="{% static 'js/booking_actions.js' %}"></script>
+
 {% endblock %}
+
+function getCookie(name) {
+    const value = `; ${document.cookie}`;
+    const parts = value.split(`; ${name}=`);
+    if (parts.length === 2) return parts.pop().split(";").shift();
+}
+
+document.addEventListener("DOMContentLoaded", function () {
+
+    document.addEventListener("submit", async function (e) {
+        const form = e.target;
+
+        // Only target forms with AJAX
+        if (!form.matches(".ajax-form")) return;
+
+        e.preventDefault();
+
+        const action = form.action;
+        const csrftoken = getCookie("csrftoken");
+
+        const btn = form.querySelector("button[type=submit]");
+        if (btn) {
+            btn.disabled = true;
+            btn.dataset.originalText = btn.innerText;
+            btn.innerText = "Processing...";
+        }
+
+        try {
+            const resp = await fetch(action, {
+                method: "POST",
+                headers: {
+                    "X-Requested-With": "XMLHttpRequest",
+                    "X-CSRFToken": csrftoken
+                }
+            });
+
+            const data = await resp.json();
+
+            if (resp.ok && data.ok) {
+                // If this is cancel inside list
+                if (form.classList.contains("cancel-inline")) {
+                    const li = form.closest("li");
+                    if (li) {
+                        li.querySelector("button[type=submit]").innerText = "Cancelled";
+                    }
+                    return;
+                }
+
+                // If this is confirm on detail page
+                if (data.message) {
+                    window.location.href = "/booking/list/";
+                    return;
+                }
+            } else {
+                alert("Something went wrong: " + (data.message || ""));
+            }
+
+        } catch (err) {
+            alert("Network error: " + err.message);
+        } finally {
+            if (btn) {
+                btn.disabled = false;
+                btn.innerText = btn.dataset.originalText;
+            }
+        }
+    });
+});

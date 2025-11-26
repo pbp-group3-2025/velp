@@ -1,0 +1,21 @@
+.ajax-error-box {
+    border: 1px solid #cc0000;
+    background: #ffe5e5;
+    padding: 10px;
+    margin-bottom: 15px;
+    color: #990000;
+    border-radius: 5px;
+}
+
+.ajax-info-box {
+    border: 1px solid #0055cc;
+    background: #e5f0ff;
+    padding: 10px;
+    margin-bottom: 15px;
+    color: #003399;
+    border-radius: 5px;
+}
+
+button[disabled] {
+    opacity: 0.6;
+}
