@@ -1,5 +1,6 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from main.forms import VenueForm, BookingForm
+from review.forms import ReviewForm 
 from main.models import Venue, Booking
 from django.http import HttpResponse
 from django.core import serializers
@@ -15,6 +16,8 @@ from django import forms
 from django.utils import timezone
 from datetime import time, timedelta, date
 from django.core.exceptions import ValidationError
+from django.template.loader import render_to_string
+from django.http import JsonResponse
 
 
 # Create your views here.
@@ -63,10 +66,12 @@ def create_venue(request):
 @login_required(login_url='/login')
 def show_venue(request, id):
     venue = get_object_or_404(Venue, pk=id)
+    form = ReviewForm()
 
 
     context = {
-        "venue": venue
+        "venue": venue,
+        "form": form
     }
 
 
@@ -232,3 +237,9 @@ def booking_cancel(request, pk):
         messages.success(request, "Booking cancelled.")
         return redirect(reverse('main:booking_list'))
     return render(request, "booking/booking_cancel_confirm.html", {"booking": booking})
+
+
+def get_reviews_html(request, id):
+    venue = Venue.objects.get(pk=id)
+    html = render_to_string("venue_detail.html", {"venue": venue, "user": request.user}, request=request)
+    return JsonResponse({"html": html})

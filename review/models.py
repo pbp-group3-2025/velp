@@ -18,7 +18,7 @@ class Review(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
     def average_rating(self):
-        """Calcule la moyenne des critères."""
+        """average value of criteria ratings"""
         total = self.accessibility + self.facility + self.value_for_money
         return round(total / 3, 1)
 

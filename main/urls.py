@@ -5,7 +5,7 @@ from main.views import login_user, logout_user
 from main.views import edit_venue
 from main.views import delete_venue
 from main.views import create_booking, booking_list, booking_confirm, booking_cancel
-
+from main.views import get_reviews_html
 
 app_name = 'main'
 
@@ -14,6 +14,7 @@ urlpatterns = [
     path('', show_main, name='show_main'),
     path('venue/create/', create_venue, name='create_venue'),
     path('venue/<str:id>/', show_venue, name='show_venue'),
+    path('venue/<str:id>/reviews_html/', get_reviews_html, name='get_reviews_html'),
     path('xml/', show_xml, name='show_xml'),
     path('json/', show_json, name='show_json'),
     path('xml/<str:id>/', show_xml_by_id, name='show_xml_by_id'),
