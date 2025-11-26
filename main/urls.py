@@ -6,6 +6,8 @@ from main.views import edit_venue
 from main.views import delete_venue
 from main.views import create_booking, booking_list, booking_confirm, booking_cancel, proxy_image
 from main.views import get_reviews_html
+from main.views import create_booking, booking_list, booking_confirm, booking_cancel, create_booking_ajax
+
 
 app_name = 'main'
 
@@ -29,5 +31,6 @@ urlpatterns = [
     path('booking/<int:pk>/confirm/', booking_confirm, name='booking_confirm'),
     path('booking/<int:pk>/cancel/', booking_cancel, name='booking_cancel'),
     path('proxy-image/', proxy_image, name='proxy_image'),
+    path("venue/<str:id>/book/ajax/", create_booking_ajax, name="create_booking_ajax"),
 ]
 
