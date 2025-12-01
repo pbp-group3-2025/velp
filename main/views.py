@@ -18,7 +18,7 @@ from datetime import time, timedelta, date
 from django.core.exceptions import ValidationError
 from django.template.loader import render_to_string
 from django.http import JsonResponse
-
+import requests
 
 # Create your views here.
 @login_required(login_url='/login')
@@ -243,3 +243,22 @@ def get_reviews_html(request, id):
     venue = Venue.objects.get(pk=id)
     html = render_to_string("venue_detail.html", {"venue": venue, "user": request.user}, request=request)
     return JsonResponse({"html": html})
+
+
+def proxy_image(request):
+    image_url = request.GET.get('url')
+    if not image_url:
+        return HttpResponse('No URL provided', status=400)
+    
+    try:
+        # Fetch image from external source
+        response = requests.get(image_url, timeout=10)
+        response.raise_for_status()
+        
+        # Return the image with proper content type
+        return HttpResponse(
+            response.content,
+            content_type=response.headers.get('Content-Type', 'image/jpeg')
+        )
+    except requests.RequestException as e:
+        return HttpResponse(f'Error fetching image: {str(e)}', status=500)

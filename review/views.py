@@ -62,29 +62,13 @@ def edit_review(request, review_id):
     return render(request, 'review/edit_review.html', {'form': form, 'review': review})
 
 def add_review_general(request):
-    if request.method == 'POST':
-        venue_id = request.POST.get('venue')
-        venue = get_object_or_404(Venue, id=venue_id)
+    venues = Venue.objects.all().order_by('name')
+    form = ReviewForm()
+    return render(request, 'review/add_review_general.html', {
+        'form': form, 
+        'venues': venues
+    })
 
-        # Check if the user has already posted a review for this venue
-        existing_review = Review.objects.filter(user=request.user, venue=venue).first()
-        if existing_review:
-            messages.warning(request, f"You've already reviewed {venue.name}.")
-            return redirect('main:show_venue', id=venue.id)
-
-        form = ReviewForm(request.POST)
-        if form.is_valid():
-            review = form.save(commit=False)
-            review.user = request.user
-            review.venue = venue
-            review.save()
-            messages.success(request, f"Your review for {venue.name} was added successfully!")
-            return redirect('main:show_venue', id=venue.id)
-    else:
-        form = ReviewForm()
-
-    venues = Venue.objects.all()
-    return render(request, 'review/add_review_general.html', {'form': form, 'venues': venues})
 
 @login_required
 def add_review_with_ajax(request, venue_id):

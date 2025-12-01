@@ -4,7 +4,7 @@ from main.views import register
 from main.views import login_user, logout_user
 from main.views import edit_venue
 from main.views import delete_venue
-from main.views import create_booking, booking_list, booking_confirm, booking_cancel
+from main.views import create_booking, booking_list, booking_confirm, booking_cancel, proxy_image
 from main.views import get_reviews_html
 
 app_name = 'main'
@@ -28,5 +28,6 @@ urlpatterns = [
     path('bookings/', booking_list, name='booking_list'),
     path('booking/<int:pk>/confirm/', booking_confirm, name='booking_confirm'),
     path('booking/<int:pk>/cancel/', booking_cancel, name='booking_cancel'),
+    path('proxy-image/', proxy_image, name='proxy_image'),
 ]
 
