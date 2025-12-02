@@ -231,16 +231,17 @@ def _serialize_comment(comment):
 def _serialize_post(post, include_comments=False):
     data = {
         "id": post.id,
+        "headline": post.headline,
         "content": post.content,
+        "image_url": post.image_url,
         "created_at": post.created_at.isoformat(),
         "author": _serialize_user(post.author),
         "group_id": post.group_id,
     }
     if include_comments:
-        data["comments"] = [
-            _serialize_comment(c) for c in post.comments.all()
-        ]
+        data["comments"] = [_serialize_comment(c) for c in post.comments.all()]
     return data
+
 
 
 
