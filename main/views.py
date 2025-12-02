@@ -1,5 +1,6 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from main.forms import VenueForm, BookingForm
+from review.forms import ReviewForm 
 from main.models import Venue, Booking
 from django.http import HttpResponse
 from django.core import serializers
@@ -15,30 +16,30 @@ from django import forms
 from django.utils import timezone
 from datetime import time, timedelta, date
 from django.core.exceptions import ValidationError
-
+from django.template.loader import render_to_string
+from django.http import JsonResponse
+import requests
 
 # Create your views here.
 @login_required(login_url='/login')
 def show_main(request):
 
-
-    filter_type = request.GET.get("filter", "all")  # default 'all'
-
-
-    if filter_type == "all":
-        venue_list = Venue.objects.all()
-    else:
-        venue_list = Venue.objects.filter(user=request.user)
-
+    venue_list = Venue.objects.all() 
+    
+    # Get filter, default is 'all'
+    filter_type = request.GET.get("filter", "all") 
+    
+    valid_filters = ['pitch', 'stadium', 'sports_centre']
+    if filter_type in valid_filters:
+        venue_list = venue_list.filter(leisure=filter_type) 
+    
+    venue_list = venue_list.order_by('name')
 
     context = {
-        'npm' : '2406365370',
         'name': request.user.username,
-        'class': 'PBP KKI',
         'venue_list': venue_list,
         'last_login': request.COOKIES.get('last_login', 'Never')
     }
-
 
     return render(request, "main.html", context)
 
@@ -65,10 +66,12 @@ def create_venue(request):
 @login_required(login_url='/login')
 def show_venue(request, id):
     venue = get_object_or_404(Venue, pk=id)
+    form = ReviewForm()
 
 
     context = {
-        "venue": venue
+        "venue": venue,
+        "form": form
     }
 
 
@@ -216,6 +219,12 @@ def booking_list(request):
 @login_required(login_url='/login')
 def booking_confirm(request, pk):
     booking = get_object_or_404(Booking, pk=pk, user=request.user)
+
+    if request.method == "POST" and booking.status == "PENDING":
+        booking.status = "CONFIRMED"
+        booking.save()
+        return redirect("main:booking_list")
+
     return render(request, "booking/booking_confirm.html", {"booking": booking})
 
 
@@ -228,3 +237,28 @@ def booking_cancel(request, pk):
         messages.success(request, "Booking cancelled.")
         return redirect(reverse('main:booking_list'))
     return render(request, "booking/booking_cancel_confirm.html", {"booking": booking})
+
+
+def get_reviews_html(request, id):
+    venue = Venue.objects.get(pk=id)
+    html = render_to_string("venue_detail.html", {"venue": venue, "user": request.user}, request=request)
+    return JsonResponse({"html": html})
+
+
+def proxy_image(request):
+    image_url = request.GET.get('url')
+    if not image_url:
+        return HttpResponse('No URL provided', status=400)
+    
+    try:
+        # Fetch image from external source
+        response = requests.get(image_url, timeout=10)
+        response.raise_for_status()
+        
+        # Return the image with proper content type
+        return HttpResponse(
+            response.content,
+            content_type=response.headers.get('Content-Type', 'image/jpeg')
+        )
+    except requests.RequestException as e:
+        return HttpResponse(f'Error fetching image: {str(e)}', status=500)

@@ -1,16 +1,7 @@
 {% extends 'base.html' %}
 {% block content %}
 {% include 'navbar.html' %}
-<h1>Velp</h1>
-
-
-<h4>NPM: </h4>
-<p>{{npm}}</p> <!-- Use your NPM here -->
-<h4>Name: </h4>
-<p>{{name}}</p> <!-- Use your name here -->
-<h4>Class: </h4>
-<p>{{class}}</p> <!-- Use your class here -->
-
+<h1>Velp - Venue</h1>
 
 {% if user.is_authenticated and user.is_superuser %}
 <a href="{% url 'main:create_venue' %}">
@@ -33,21 +24,18 @@
   <button>Logout</button>
 </a>
 
-
 <h5>Last login session: {{ last_login }}</h5>
 <hr>
 
-
-<!-- <a href="?filter=all">
-    <button type="button">All Articles</button>
-</a>
-<a href="?filter=my">
-    <button type="button">My Articles</button>
-</a> -->
-
+<div class="mb-3">
+    <strong>Filter by:</strong>
+    <a href="{% url 'main:show_main' %}?filter=all" class="btn btn-sm btn-primary">All</a>
+    <a href="{% url 'main:show_main' %}?filter=pitch" class="btn btn-sm btn-secondary">Pitch</a>
+    <a href="{% url 'main:show_main' %}?filter=stadium" class="btn btn-sm btn-secondary">Stadium</a>
+    <a href="{% url 'main:show_main' %}?filter=sports_centre" class="btn btn-sm btn-secondary">Sports Centre</a>
+</div>
 
 <b><p>Scroll through our list of venues!</p></b>
-
 
 {% if not venue_list %}
     <p>No venue data available in Velp.</p>

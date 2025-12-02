@@ -21,9 +21,9 @@ The proposed application is a web-based platform that provides comprehensive inf
 1. Review (Fanny)
 2. Venues (Admin) (Aldebaran)
 3. Community (Ghani)
-4. Book Venue (Adit)
+4. Book Venue (Gabriel)
 5. Posts (Tara)
-6. Report (Gabriel)
+6. Report (Adit)
 
 
 # Main product category initial dataset source
@@ -43,4 +43,7 @@ Can add venues, delete venues, update venues, and read venues.
 # PWS deployment link and design link
 
 1. PWS Deployment Link: https://aldebaran-rahman-velp.pbp.cs.ui.ac.id/
-2. Design Link: INSERT_HERE
+2. Design Link: 
+2.1. Prototype: https://www.figma.com/proto/V3GBNUxnxEFbsRlxF4Ps1y/Midterm-Project?node-id=0-1&t=XU6P1qsrio1VXict-1
+
+2.2. Project: https://www.figma.com/design/V3GBNUxnxEFbsRlxF4Ps1y/Midterm-Project?node-id=0-1&t=XU6P1qsrio1VXict-1

@@ -24,4 +24,5 @@ urlpatterns = [
     path('', include(('main.urls', 'main'), namespace='main')),
     path('review/', include('review.urls')),
     path('posts/', include(('posts.urls', 'posts'), namespace='posts')),
+    path('auth/', include(('authentication.urls', 'authentication'), namespace='authentication')),
 ]

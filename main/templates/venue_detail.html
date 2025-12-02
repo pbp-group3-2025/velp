@@ -1,11 +1,10 @@
 {% extends 'base.html' %}
 {% load humanize %}
+
 {% block content %}
 <p><a href="{% url 'main:show_main' %}"><button>← Back to Venue List</button></a></p>
 
-
 <h1>{{ venue.name }}</h1>
-
 
 <p><b>City:</b> {{ venue.CityName }}</p>
 <p><b>Street:</b> {{ venue.StreetName }}</p>
@@ -38,19 +37,40 @@
     {% include "reports/report_button.html" with obj=venue target_type="venue" %}
 {% endif %}
 
-{% for review in venue.reviews.all %}
-  <p><strong>{{ review.user.username }}</strong> : {{ review.average_rating }}/5</p>
-  <p>{{ review.comment }}</p>
+<div id="reviewsContainer">
+  {% for review in venue.reviews.all %}
+    <hr>
+
+    <p><strong>{{ review.user.username }}</strong> : {{ review.average_rating }}/5</p>
+    <p>Accessibility: {{ review.accessibility }}/5</p>
+    <p>Facility: {{ review.facility }}/5</p>
+    <p>Value for money: {{ review.value_for_money }}/5</p>
+    <p>Comment : {{ review.comment }}</p>
 
     {% if review.user == request.user %}
-      <form action="{% url 'review:delete_review' review.id %}" method="POST" style="display:inline;">
-        {% csrf_token %}
-        <button type="submit" class="btn btn-danger btn-sm">Delete</button>
-      </form>
+      
+      <!-- DELETE -->
+      <button 
+        type="button"
+        class="btn btn-danger btn-sm deleteReviewBtn"
+        data-id="{{ review.id }}"
+        data-url="{% url 'review:delete_review' review.id %}">
+        Delete 
+      </button>
 
-    <a href="{% url 'review:edit_review' review.id %}" class="btn btn-warning btn-sm">
-        Edit
-    </a>
+      <!-- EDIT AJAX -->
+      <button 
+        type="button"
+        class="btn btn-warning btn-sm editReviewBtn"
+        data-id="{{ review.id }}"
+        data-accessibility="{{ review.accessibility }}"
+        data-facility="{{ review.facility }}"
+        data-vfm="{{ review.value_for_money }}"
+        data-comment="{{ review.comment }}"
+        data-url="{% url 'review:edit_review_ajax' review.id %}">
+        Edit (AJAX)
+      </button>
+
     {% endif %}
 
     <p>Report this review?</p>
@@ -58,12 +78,19 @@
       {% include "reports/report_button.html" with obj=review target_type="review" %}
     {% endif %}
 
-  <hr>
-{% empty %}
-  <p>No review at the moment.</p>
-{% endfor %}
+  {% empty %}
+    <p>No review at the moment.</p>
+  {% endfor %}
+</div>
 
-<a href="{% url 'review:add_review' venue.id %}" class="btn btn-primary">
-  Add a review
-</a>
+<hr>
+
+<button type="button" 
+        class="btn btn-success mb-4" 
+        id="openAddReviewBtn">
+  Add a review by AJAX
+</button>
+
+{% include "review/modal_review.html" %}
+
 {% endblock content %}

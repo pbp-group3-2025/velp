@@ -4,6 +4,7 @@ from django.db import models
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
 from django.utils import timezone
+from django.db.models import Q, UniqueConstraint
 
 class Report(models.Model):
     class TargetType(models.TextChoices):
@@ -12,7 +13,6 @@ class Report(models.Model):
         POST = "post", "Post"
         COMMENT = "comment", "Comment"
         COMMUNITY = "community", "Community"
-        COMMUNITYPOST = "community_post", "Community Post"
         
 
     class Reason(models.TextChoices):
@@ -47,9 +47,6 @@ class Report(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     resolved_at = models.DateTimeField(null=True, blank=True)
 
-    # if you added this earlier:
-    # target_name = models.CharField(max_length=255, blank=True, default="")
-
     @property
     def is_locked(self) -> bool:
         return self.status in (self.Status.RESOLVED, self.Status.REJECTED)
@@ -61,9 +58,36 @@ class Report(models.Model):
             self.resolved_at = timezone.now()
         self.save(update_fields=["status", "handled_by", "resolved_at"])
 
+    @property
+    def target_name(self) -> str:
+        """
+        Try common name-like attributes across apps; fall back to __str__.
+        Works for Venue (name), Post (title), User (username), etc.
+        """
+        obj = self.target
+        if not obj:
+            return "-"
+        for attr in ("name", "title", "username"):
+            val = getattr(obj, attr, None)
+            if val:
+                return str(val)
+        return str(obj)  # fallback to __str__
+
     class Meta:
-        # 👇 IMPORTANT: reuse the existing table from the reports app
         db_table = "reports"
         indexes = [
             models.Index(fields=["content_type", "object_id", "status"]),
+        ]
+
+        unique_together = [
+            ['reporter', 'content_type', 'object_id', 'status']
+        ]
+
+        constraints = [
+            # only ONE OPEN per (user, target)
+            UniqueConstraint(
+                fields=["reporter", "content_type", "object_id"],
+                condition=Q(status="open"),
+                name="uq_open_report_per_user_target",
+            ),
         ]
