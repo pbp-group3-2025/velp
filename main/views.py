@@ -173,6 +173,83 @@ def delete_venue(request, id):
     venue.delete()
     return HttpResponseRedirect(reverse('main:show_main'))
 
+
+@login_required(login_url='/login')
+def create_venue_ajax(request):
+    is_ajax = request.headers.get("X-Requested-With") == "XMLHttpRequest"
+
+    if request.method == "POST":
+        form = VenueForm(request.POST)
+        
+        if form.is_valid():
+            venue_entry = form.save(commit=False)
+            venue_entry.user = request.user
+            venue_entry.save()
+            
+            return JsonResponse({
+                "ok": True,
+                "redirect": reverse("main:show_main")
+            })
+        else:
+            return JsonResponse({
+                "ok": False,
+                "errors": form.errors
+            })
+    
+    # fallback for GET
+    form = VenueForm()
+    return render(request, "create_venue.html", {"form": form})
+
+
+@login_required(login_url='/login')
+def edit_venue_ajax(request, id):
+    venue = get_object_or_404(Venue, pk=id)
+    is_ajax = request.headers.get("X-Requested-With") == "XMLHttpRequest"
+
+    if request.method == "POST":
+        form = VenueForm(request.POST, instance=venue)
+        
+        if form.is_valid():
+            form.save()
+            
+            return JsonResponse({
+                "ok": True,
+                "redirect": reverse("main:show_main")
+            })
+        else:
+            return JsonResponse({
+                "ok": False,
+                "errors": form.errors
+            })
+    else:
+        form = VenueForm(instance=venue)
+    
+    context = {"form": form, "venue": venue}
+    return render(request, "edit_venue.html", context)
+
+
+@login_required(login_url='/login')
+def delete_venue_ajax(request, id):
+    venue = get_object_or_404(Venue, pk=id)
+    is_ajax = request.headers.get("X-Requested-With") == "XMLHttpRequest"
+
+    if request.method == "POST":
+        venue.delete()
+        
+        if is_ajax:
+            return JsonResponse({
+                "ok": True,
+                "redirect": reverse("main:show_main")
+            })
+        return HttpResponseRedirect(reverse("main:show_main"))
+    
+    # For non-AJAX DELETE requests, just redirect
+    if not is_ajax:
+        venue.delete()
+        return HttpResponseRedirect(reverse("main:show_main"))
+    
+    return JsonResponse({"ok": False, "error": "Invalid request method"})
+
 def create_booking(request, id):
     venue = get_object_or_404(Venue, pk=id)
 

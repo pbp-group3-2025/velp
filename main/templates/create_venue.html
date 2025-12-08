@@ -1,10 +1,12 @@
 {% extends 'base.html' %}
+{% load static %}
 {% block content %}
 <p><a href="{% url 'main:show_main' %}"><button>← Back to Venue List</button></a></p>
 <h1>Add Venue</h1>
 
+<div id="ajax-errors"></div>
 
-<form method="POST">
+<form id="venue-form" method="POST" action="{% url 'main:create_venue_ajax' %}">
   {% csrf_token %}
   <table>
     {{ form.as_table }}
@@ -17,5 +19,7 @@
   </table>
 </form>
 
+<script src="{% static 'js/venue.js' %}"></script>
 
 {% endblock %}
+
