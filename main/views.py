@@ -2,7 +2,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from main.forms import VenueForm, BookingForm
 from review.forms import ReviewForm 
 from main.models import Venue, Booking
-from django.http import HttpResponse
+from django.http import HttpResponse, JsonResponse
 from django.core import serializers
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib import messages
@@ -173,6 +173,83 @@ def delete_venue(request, id):
     venue.delete()
     return HttpResponseRedirect(reverse('main:show_main'))
 
+
+@login_required(login_url='/login')
+def create_venue_ajax(request):
+    is_ajax = request.headers.get("X-Requested-With") == "XMLHttpRequest"
+
+    if request.method == "POST":
+        form = VenueForm(request.POST)
+        
+        if form.is_valid():
+            venue_entry = form.save(commit=False)
+            venue_entry.user = request.user
+            venue_entry.save()
+            
+            return JsonResponse({
+                "ok": True,
+                "redirect": reverse("main:show_main")
+            })
+        else:
+            return JsonResponse({
+                "ok": False,
+                "errors": form.errors
+            })
+    
+    # fallback for GET
+    form = VenueForm()
+    return render(request, "create_venue.html", {"form": form})
+
+
+@login_required(login_url='/login')
+def edit_venue_ajax(request, id):
+    venue = get_object_or_404(Venue, pk=id)
+    is_ajax = request.headers.get("X-Requested-With") == "XMLHttpRequest"
+
+    if request.method == "POST":
+        form = VenueForm(request.POST, instance=venue)
+        
+        if form.is_valid():
+            form.save()
+            
+            return JsonResponse({
+                "ok": True,
+                "redirect": reverse("main:show_main")
+            })
+        else:
+            return JsonResponse({
+                "ok": False,
+                "errors": form.errors
+            })
+    else:
+        form = VenueForm(instance=venue)
+    
+    context = {"form": form, "venue": venue}
+    return render(request, "edit_venue.html", context)
+
+
+@login_required(login_url='/login')
+def delete_venue_ajax(request, id):
+    venue = get_object_or_404(Venue, pk=id)
+    is_ajax = request.headers.get("X-Requested-With") == "XMLHttpRequest"
+
+    if request.method == "POST":
+        venue.delete()
+        
+        if is_ajax:
+            return JsonResponse({
+                "ok": True,
+                "redirect": reverse("main:show_main")
+            })
+        return HttpResponseRedirect(reverse("main:show_main"))
+    
+    # For non-AJAX DELETE requests, just redirect
+    if not is_ajax:
+        venue.delete()
+        return HttpResponseRedirect(reverse("main:show_main"))
+    
+    return JsonResponse({"ok": False, "error": "Invalid request method"})
+
 def create_booking(request, id):
     venue = get_object_or_404(Venue, pk=id)
 
@@ -262,3 +339,83 @@ def proxy_image(request):
         )
     except requests.RequestException as e:
         return HttpResponse(f'Error fetching image: {str(e)}', status=500)
+@login_required(login_url='/login')
+def create_booking_ajax(request, id):
+    venue = get_object_or_404(Venue, pk=id)
+
+    is_ajax = request.headers.get("X-Requested-With") == "XMLHttpRequest"
+
+    if request.method == "POST":
+        form = BookingForm(request.POST)
+
+        if form.is_valid():
+
+            start_hour = int(form.cleaned_data['start_hour'])
+            duration = int(form.cleaned_data['duration_hours'])
+            d = form.cleaned_data['date']
+
+            blocked = []
+            for h in range(start_hour, start_hour + duration):
+                hh = h % 24
+                t = time(hour=hh, minute=0)
+                if Booking.objects.filter(venue=venue, date=d, start_time=t).exists():
+                    blocked.append(hh)
+
+            if blocked:
+                slots = ", ".join(f"{h:02d}:00-{(h+1)%24:02d}:00" for h in blocked)
+                return JsonResponse({
+                    "ok": False,
+                    "error": f"These hour slots are already booked for {d}: {slots}."
+                })
+
+            booking = form.save(venue=venue, user=request.user, commit=True)
+            booking.total_price = booking.compute_total_price()
+            booking.save()
+
+            return JsonResponse({
+                "ok": True,
+                "redirect": reverse("main:booking_list")
+            })
+
+        else:
+            return JsonResponse({
+                "ok": False,
+                "errors": form.errors
+            })
+
+    # fallback
+    form = BookingForm(initial={'date': date.today()})
+    return render(request, "booking/booking_form.html", {"form": form, "venue": venue})
+
+@login_required(login_url='/login')
+def booking_cancel(request, pk):
+    booking = get_object_or_404(Booking, pk=pk, user=request.user)
+    is_ajax = request.headers.get('x-requested-with') == 'XMLHttpRequest'
+
+
+    if request.method == 'POST':
+        booking.status = 'CANCELLED'
+        booking.save()
+        if is_ajax:
+            return JsonResponse({'ok': True, 'message': 'Booking cancelled.'})
+        messages.success(request, 'Booking cancelled.')
+        return redirect(reverse('main:booking_list'))
+
+
+    return render(request, 'booking/booking_cancel_confirm.html', {'booking': booking})
+
+@login_required(login_url='/login')
+def booking_confirm(request, pk):
+    booking = get_object_or_404(Booking, pk=pk, user=request.user)
+    is_ajax = request.headers.get('x-requested-with') == 'XMLHttpRequest'
+
+
+    if request.method == 'POST' and booking.status == 'PENDING':
+        booking.status = 'CONFIRMED'
+        booking.save()
+        if is_ajax:
+            return JsonResponse({'ok': True, 'message': 'Booking confirmed.'})
+        return redirect('main:booking_list')
+
+
+    return render(request, 'booking/booking_confirm.html', {'booking': booking})

@@ -2,7 +2,7 @@
 {% block content %}
 <h2>Cancel booking?</h2>
 <p>{{ booking.date }} — {{ booking.start_time }} to {{ booking.end_time }} @ {{ booking.venue.name }}</p>
-<form method="post">
+<form method="post" class="ajax-form">
   {% csrf_token %}
   <button type="submit">Yes, cancel</button>
   <a href="{% url 'main:booking_list' %}">No</a>
