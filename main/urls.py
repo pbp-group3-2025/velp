@@ -7,7 +7,7 @@ from main.views import delete_venue, delete_venue_ajax
 from main.views import create_booking, booking_list, booking_confirm, booking_cancel, proxy_image
 from main.views import get_reviews_html
 from main.views import create_booking, booking_list, booking_confirm, booking_cancel, create_booking_ajax
-from main.views import create_venue_ajax
+from main.views import create_venue_ajax, create_venue_flutter, update_venue_flutter, delete_venue_flutter
 
 
 app_name = 'main'
@@ -36,5 +36,8 @@ urlpatterns = [
     path('booking/<int:pk>/cancel/', booking_cancel, name='booking_cancel'),
     path('proxy-image/', proxy_image, name='proxy_image'),
     path("venue/<str:id>/book/ajax/", create_booking_ajax, name="create_booking_ajax"),
+    path('create-venue-flutter/', create_venue_flutter, name='create_news_flutter'),
+    path('update-venue-flutter/<str:venue_id>/', update_venue_flutter, name='update_venue_flutter'),
+    path('delete-venue-flutter/<str:venue_id>/', delete_venue_flutter, name='delete_venue_flutter'),
 ]
 
