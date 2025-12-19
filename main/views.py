@@ -19,6 +19,12 @@ from django.core.exceptions import ValidationError
 from django.template.loader import render_to_string
 from django.http import JsonResponse
 import requests
+from django.views.decorators.csrf import csrf_exempt
+from django.utils.html import strip_tags
+import json
+from django.http import JsonResponse
+from django.views.decorators.http import require_http_methods
+from django.contrib.auth.decorators import login_required
 
 # Create your views here.
 @login_required(login_url='/login')
@@ -419,3 +425,88 @@ def booking_confirm(request, pk):
 
 
     return render(request, 'booking/booking_confirm.html', {'booking': booking})
+
+@csrf_exempt
+def create_venue_flutter(request):
+    if request.method == 'POST':
+        data = json.loads(request.body)
+        name = strip_tags(data.get("name", ""))  # Strip HTML tags
+        cityName = strip_tags(data.get("CityName", ""))  # Strip HTML tags
+        streetName = data.get("StreetName", "")
+        leisure = data.get("leisure", "")
+        user = request.user
+        
+        new_venue = Venue(
+            name=name, 
+            CityName=cityName,
+            StreetName=streetName,
+            leisure=leisure,
+            user=user
+        )
+        new_venue.save()
+        
+        return JsonResponse({"status": "success"}, status=200)
+    else:
+        return JsonResponse({"status": "error"}, status=401)
+    
+@csrf_exempt
+@require_http_methods(["POST"])
+@login_required
+def update_venue_flutter(request, venue_id):
+    try:
+        venue = Venue.objects.get(pk=venue_id)
+    except Venue.DoesNotExist:
+        return JsonResponse({
+            'status': 'error',
+            'message': 'Venue not found'
+        }, status=404)
+    
+    try:
+        data = json.loads(request.body)
+        
+        # Update fields
+        if 'name' in data:
+            venue.name = data['name']
+        if 'CityName' in data:
+            venue.CityName = data['CityName']
+        if 'StreetName' in data:
+            venue.StreetName = data['StreetName']
+        if 'leisure' in data:
+            venue.leisure = data['leisure']
+        
+        venue.save()
+        
+        return JsonResponse({
+            'status': 'success',
+            'message': 'Venue updated successfully'
+        })
+    except Exception as e:
+        return JsonResponse({
+            'status': 'error',
+            'message': str(e)
+        }, status=400)
+
+
+@csrf_exempt
+@require_http_methods(["POST"])
+@login_required
+def delete_venue_flutter(request, venue_id):
+    try:
+        venue = Venue.objects.get(pk=venue_id)
+        venue_name = venue.name
+        venue.delete()
+        
+        return JsonResponse({
+            'status': 'success',
+            'message': f'Venue "{venue_name}" deleted successfully'
+        })
+    except Venue.DoesNotExist:
+        return JsonResponse({
+            'status': 'error',
+            'message': 'Venue not found'
+        }, status=404)
+    except Exception as e:
+        return JsonResponse({
+            'status': 'error',
+            'message': str(e)
+        }, status=400)
