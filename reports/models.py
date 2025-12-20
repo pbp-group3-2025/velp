@@ -73,6 +73,9 @@ class Report(models.Model):
                 return str(val)
         return str(obj)  # fallback to __str__
 
+    def __str__(self):
+        return f"Report #{self.pk} - {self.get_reason_display()} on {self.get_target_type_display()} by {self.reporter.username}"
+
     class Meta:
         db_table = "reports"
         indexes = [
