@@ -1,4 +1,3 @@
-
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import get_user_model
 from django.contrib.auth.decorators import login_required
@@ -9,13 +8,9 @@ from django.http import HttpResponseForbidden
 from django.template.loader import render_to_string
 from django.http import JsonResponse
 from django.views.decorators.http import require_GET, require_POST
+from django.views.decorators.csrf import csrf_exempt  # <-- added
 
 User = get_user_model()
-#This part only for dev purpose to create posts/comments without login
-def _guest_user():
-    # For dev only: create or fetch a "guest" user so posts/comments can be created without login
-    guest, _ = User.objects.get_or_create(username='guest', defaults={'password': '!'})  # unusable password
-    return guest
 
 def group_list(request):
     groups = Group.objects.all().order_by('name')
@@ -32,6 +27,7 @@ def group_detail(request, slug):
         'form': form,
         'comment_form': comment_form,
     })
+
 @login_required
 def create_group(request):
     if request.method == "POST":
@@ -44,35 +40,28 @@ def create_group(request):
             # make sure the creator is a member too
             Membership.objects.get_or_create(group=g, user=request.user)
 
-            # if this was an AJAX submit, go to the list
             if is_ajax(request):
                 return JsonResponse({
                     "ok": True,
                     "redirect": reverse("community:group_list")
                 })
 
-            # normal (non-AJAX) submit: just redirect to the list page
             return redirect("community:group_list")
 
-        # form not valid
         else:
             if is_ajax(request):
                 return JsonResponse(
                     {"ok": False, "error": "Invalid form"},
                     status=400
                 )
-
     else:
         form = GroupForm()
 
-    # GET or invalid POST -> re-render the form
     return render(request, "group_form.html", {"form": form})
-
 
 @login_required
 def edit_group(request, slug):
     group = get_object_or_404(Group, slug=slug)
-    #Only the owner can edit
     if not group.is_owner(request.user):
         return HttpResponseForbidden("Only owner can edit.")
 
@@ -144,7 +133,6 @@ def delete_post(request, slug, pk):
     group = get_object_or_404(Group, slug=slug)
     post  = get_object_or_404(Post, pk=pk, group=group)
 
-    # You added can_delete on the model already—use it
     if not post.can_delete(request.user):
         return HttpResponseForbidden("You cannot delete this post.")
 
@@ -180,9 +168,10 @@ def create_comment(request, slug, pk):
     if form.is_valid():
         c = form.save(commit=False)
         c.post = post
-        c.author = request.user if request.user.is_authenticated else _guest_user()
+        c.author = request.user 
         c.save()
     return redirect('community:group_detail', slug=slug)
+
 @login_required
 def delete_comment(request, slug, pk, cpk):
     post = get_object_or_404(Post, pk=pk, group__slug=slug)
@@ -196,12 +185,10 @@ def delete_comment(request, slug, pk, cpk):
         return redirect("community:post_detail", slug=slug, pk=pk)
     return render(request, "comment_confirm_delete.html", {"post": post, "comment": comment})
 
-
 def is_ajax(request):
     return request.headers.get("x-requested-with") == "XMLHttpRequest"
 
-
-# Json implement for the flutter
+# ---------- JSON / Flutter API ----------
 
 def _serialize_user(user):
     if user is None:
@@ -242,10 +229,6 @@ def _serialize_post(post, include_comments=False):
         data["comments"] = [_serialize_comment(c) for c in post.comments.all()]
     return data
 
-
-
-
-
 @require_GET
 def api_group_list(request):
     groups = Group.objects.select_related("owner").all().order_by("name")
@@ -253,8 +236,6 @@ def api_group_list(request):
         "ok": True,
         "groups": [_serialize_group(g) for g in groups],
     })
-
-
 
 @require_GET
 def api_group_detail(request, slug):
@@ -271,9 +252,7 @@ def api_group_detail(request, slug):
         ],
     })
 
-
-
-
+@csrf_exempt
 @login_required
 @require_POST
 def api_create_group(request):
@@ -293,9 +272,7 @@ def api_create_group(request):
         "group": _serialize_group(g),
     }, status=201)
 
-
-
-
+@csrf_exempt
 @login_required
 @require_POST
 def api_edit_group(request, slug):
@@ -317,9 +294,7 @@ def api_edit_group(request, slug):
         "group": _serialize_group(group),
     })
 
-
-
-
+@csrf_exempt
 @login_required
 @require_POST
 def api_delete_group(request, slug):
@@ -333,7 +308,7 @@ def api_delete_group(request, slug):
     group.delete()
     return JsonResponse({"ok": True})
 
-
+@csrf_exempt
 @login_required
 @require_POST
 def api_join_group(request, slug):
@@ -341,6 +316,7 @@ def api_join_group(request, slug):
     Membership.objects.get_or_create(group=group, user=request.user)
     return JsonResponse({"ok": True})
 
+@csrf_exempt
 @login_required
 @require_POST
 def api_leave_group(request, slug):
@@ -355,8 +331,7 @@ def api_leave_group(request, slug):
     Membership.objects.filter(group=group, user=request.user).delete()
     return JsonResponse({"ok": True})
 
-
-
+@csrf_exempt
 @login_required
 @require_POST
 def api_create_post(request, slug):
@@ -376,8 +351,6 @@ def api_create_post(request, slug):
         "post": _serialize_post(post, include_comments=True),
     }, status=201)
 
-
-
 @require_GET
 def api_post_detail(request, slug, pk):
     group = get_object_or_404(Group, slug=slug)
@@ -393,6 +366,7 @@ def api_post_detail(request, slug, pk):
         "post": _serialize_post(post, include_comments=True),
     })
 
+@csrf_exempt
 @login_required
 @require_POST
 def api_delete_post(request, slug, pk):
@@ -408,6 +382,7 @@ def api_delete_post(request, slug, pk):
     post.delete()
     return JsonResponse({"ok": True})
 
+@csrf_exempt
 @login_required
 @require_POST
 def api_create_comment(request, slug, pk):
@@ -427,6 +402,7 @@ def api_create_comment(request, slug, pk):
         "comment": _serialize_comment(c),
     }, status=201)
 
+@csrf_exempt
 @login_required
 @require_POST
 def api_delete_comment(request, slug, pk, cpk):
@@ -441,4 +417,3 @@ def api_delete_comment(request, slug, pk, cpk):
 
     comment.delete()
     return JsonResponse({"ok": True})
-
