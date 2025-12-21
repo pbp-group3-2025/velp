@@ -2,6 +2,7 @@ from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse, HttpResponseForbidden, HttpResponseRedirect
 from django.shortcuts import get_object_or_404, render, redirect
 from django.views.decorators.http import require_POST
+from django.views.decorators.csrf import csrf_exempt
 from django.core.paginator import Paginator
 from django.db.models import Count, Q
 from django.template.loader import render_to_string
@@ -14,13 +15,11 @@ from .forms import PostForm, CommentForm
 def post_list(request):
     q = (request.GET.get("q") or "").strip()
 
-    # Base queryset: author is used in templates, so select_related saves queries.
     qs = Post.objects.select_related("author").order_by("-created_at")
 
     if q:
         qs = qs.filter(Q(content__icontains=q) | Q(venue_hint__icontains=q))
 
-    # Safe pagination (coerce to int; fall back to page 1)
     page_str = request.GET.get("page") or "1"
     try:
         page_num = int(page_str)
@@ -54,7 +53,6 @@ def post_update(request, pk):
 @login_required
 @require_POST
 def post_delete(request, pk):
-    """Page-level delete (POST-only) then redirect back to list."""
     post = get_object_or_404(Post, pk=pk)
     if post.author != request.user:
         return HttpResponseForbidden("Only the author can delete this post.")
@@ -67,6 +65,7 @@ def post_delete(request, pk):
 @login_required
 def api_post_list(request):
     q = (request.GET.get("q") or "").strip()
+
     qs = (
         Post.objects.select_related("author")
         .annotate(
@@ -100,6 +99,63 @@ def api_post_list(request):
 
 
 @login_required
+def api_post_detail(request, pk):
+    post = get_object_or_404(Post.objects.select_related("author"), pk=pk)
+
+    comments_qs = (
+        post.comments.select_related("author")
+        .order_by("created_at")
+    )
+
+    uid = request.user.id
+    comments = []
+    for c in comments_qs:
+        comments.append(
+            {
+                "id": str(c.id),
+                "author": c.author.username,
+                "body": c.body,
+                "created_at": c.created_at.strftime("%Y-%m-%d %H:%M"),
+                "can_delete": (c.author_id == uid) or (post.author_id == uid),
+            }
+        )
+
+    return JsonResponse(
+        {
+            "id": str(post.id),
+            "author": post.author.username,
+            "content": post.content,
+            "venue_hint": post.venue_hint,
+            "created_at": post.created_at.strftime("%Y-%m-%d %H:%M"),
+            "updated_at": post.updated_at.strftime("%Y-%m-%d %H:%M"),
+            "like_count": post.likes.count(),
+            "comment_count": post.comments.count(),
+            "is_liked": post.likes.filter(id=uid).exists(),
+            "is_owner": post.author_id == uid,
+            "comments": comments,
+        }
+    )
+
+
+@csrf_exempt
+@login_required
+@require_POST
+def api_create(request):
+    content = (request.POST.get("content") or "").strip()
+    venue_hint = (request.POST.get("venue_hint") or "").strip()
+
+    if not content:
+        return JsonResponse({"detail": "Content is required"}, status=400)
+
+    p = Post.objects.create(author=request.user, content=content, venue_hint=venue_hint)
+
+    # keeps Django web AJAX compatible; Flutter can ignore html
+    html = render_to_string("partials/card.html", {"p": p, "user": request.user})
+    return JsonResponse({"detail": "CREATED", "id": str(p.id), "html": html}, status=201)
+
+
+@csrf_exempt
+@login_required
 @require_POST
 def api_post_update(request, pk):
     post = get_object_or_404(Post, pk=pk)
@@ -115,6 +171,7 @@ def api_post_update(request, pk):
     return JsonResponse({"detail": form.errors.as_json()}, status=400)
 
 
+@csrf_exempt
 @login_required
 @require_POST
 def api_post_delete(request, pk):
@@ -126,6 +183,7 @@ def api_post_delete(request, pk):
     return JsonResponse({"detail": "DELETED"})
 
 
+@csrf_exempt
 @login_required
 @require_POST
 def api_like_toggle(request, pk):
@@ -142,16 +200,19 @@ def api_like_toggle(request, pk):
     return JsonResponse({"liked": liked, "count": post.likes.count()})
 
 
+@csrf_exempt
 @login_required
 @require_POST
 def api_comment_create(request, pk):
     post = get_object_or_404(Post, pk=pk)
     form = CommentForm(request.POST)
+
     if form.is_valid():
         c = form.save(commit=False)
         c.post = post
         c.author = request.user
         c.save()
+
         return JsonResponse(
             {
                 "detail": "CREATED",
@@ -167,45 +228,15 @@ def api_comment_create(request, pk):
     return JsonResponse({"detail": form.errors.as_json()}, status=400)
 
 
+@csrf_exempt
 @login_required
 @require_POST
 def api_comment_delete(request, cid):
-    c = get_object_or_404(Comment, pk=cid)
+    c = get_object_or_404(Comment.objects.select_related("post"), pk=cid)
+
     if c.author != request.user and c.post.author != request.user:
         return JsonResponse({"detail": "FORBIDDEN"}, status=403)
 
     post = c.post
     c.delete()
     return JsonResponse({"detail": "DELETED", "count": post.comments.count()})
-
-
-@login_required
-@require_POST
-def api_create(request):
-    """AJAX create post, returns rendered card HTML; POST-only & auth-only."""
-    content = (request.POST.get("content") or "").strip()
-    venue_hint = (request.POST.get("venue_hint") or "").strip()
-
-    if not content:
-        return JsonResponse({"detail": "Content is required"}, status=400)
-
-    p = Post.objects.create(author=request.user, content=content, venue_hint=venue_hint)
-    html = render_to_string("partials/card.html", {"p": p, "user": request.user})
-    return JsonResponse({"html": html}, status=201)
-
-@login_required
-def api_post_detail(request, pk):
-    post = get_object_or_404(Post, pk=pk)
-    return JsonResponse({
-        'id': str(post.id),
-        'author': post.author.username,
-        'content': post.content,
-        'venue_hint': post.venue_hint,
-        'created_at': post.created_at.strftime('%Y-%m-%d %H:%M'),
-        'updated_at': post.updated_at.strftime('%Y-%m-%d %H:%M'),
-        'like_count': post.likes.count(),
-        'comment_count': post.comments.count(),
-        'is_liked': post.likes.filter(id=request.user.id).exists(),
-        'is_owner': post.author_id == request.user.id,
-    })
-
