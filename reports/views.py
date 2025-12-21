@@ -1,22 +1,22 @@
+import json
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import require_POST
-from django.http import JsonResponse, HttpResponseForbidden, HttpResponseBadRequest
-from django.shortcuts import get_object_or_404, render, redirect
+from django.http import JsonResponse
+from django.shortcuts import get_object_or_404
 from django.db.models import Q
 from django.core.paginator import Paginator
 from django.contrib.contenttypes.models import ContentType
 from django.db import transaction
+from django.views.decorators.csrf import csrf_exempt
 from .models import Report
 from .forms import ReportUpdateForm, ReportCreateForm
 
-# If you don't want clients to send content_type at all:
-# map target_type -> model class
-from main.models import Venue   # adjust imports to your actual apps
-from review.models import Review # adjust
-from posts.models import Post     # adjust
-from community.models import Group  # adjust
+# Model imports
+from main.models import Venue 
+from review.models import Review 
+from posts.models import Post 
+from community.models import Group 
 from posts.models import Comment
-# from comments.models import Comment  # adjust
 
 TARGET_MODEL = {
     "venue": Venue,
@@ -26,10 +26,23 @@ TARGET_MODEL = {
     "comment": Comment,
 }
 
+def get_json_data(request):
+    """Helper to get JSON data from request body or POST"""
+    if request.content_type == 'application/json':
+        try:
+            return json.loads(request.body)
+        except json.JSONDecodeError:
+            return {}
+    return request.POST.dict()
+
+@csrf_exempt
 @require_POST
 @login_required
 def create_report(request):
-    form = ReportCreateForm(request.POST)
+    """Handles report creation"""
+    data = get_json_data(request)
+    form = ReportCreateForm(data)
+    
     if not form.is_valid():
         return JsonResponse({"ok": False, "message": "Invalid form", "errors": form.errors}, status=400)
 
@@ -41,8 +54,12 @@ def create_report(request):
     model_cls = TARGET_MODEL.get(target_type)
     if model_cls is None:
         return JsonResponse({"ok": False, "message": "Invalid target type."}, status=400)
-    if not model_cls.objects.filter(pk=object_id).exists():
-        return JsonResponse({"ok": False, "message": "Target not found."}, status=404)
+    
+    try:
+        if not model_cls.objects.filter(pk=object_id).exists():
+            return JsonResponse({"ok": False, "message": "Target not found."}, status=404)
+    except Exception:
+        return JsonResponse({"ok": False, "message": "Invalid ID format."}, status=400)
 
     content_type = ContentType.objects.get_for_model(model_cls, for_concrete_model=False)
 
@@ -53,11 +70,9 @@ def create_report(request):
             object_id=object_id,
             status="open",
         ).first()
+        
         if existing:
-            return JsonResponse(
-                {"ok": False, "message": "You already have an open report for this item.", "existing_id": existing.pk},
-                status=409,
-            )
+            return JsonResponse({"ok": False, "message": "You already have an open report."}, status=409)
 
         report = Report.objects.create(
             reporter=request.user,
@@ -69,120 +84,103 @@ def create_report(request):
             status="open",
         )
 
-    return JsonResponse({"ok": True, "id": report.pk, "message": "Thanks! Your report has been submitted."}, status=201)
+    return JsonResponse({"ok": True, "message": "Report submitted."}, status=201)
 
-
-
+@csrf_exempt
 @login_required
 def my_reports(request):
-    qs = Report.objects.filter(reporter=request.user).distinct().order_by('-created_at')
-    return render(request, 'reports/my_reports.html', {'reports': qs})
+    """Displays history for the logged-in user"""
+    qs = Report.objects.filter(reporter=request.user).select_related('reporter', 'handled_by', 'content_type').order_by('-created_at')
+    reports_data = [{
+        'id': r.pk, 'target_type': r.target_type, 'object_id': r.object_id,
+        'reason': r.reason, 'details': r.details, 'status': r.status,
+        'is_locked': r.is_locked, 'target_name': r.target_name,
+    } for r in qs]
+    return JsonResponse({"ok": True, "reports": reports_data})
 
-
+@csrf_exempt
 @login_required
 def mod_list(request):
+    """Admin dashboard list"""
     if not (request.user.is_staff or request.user.is_superuser):
-        return HttpResponseForbidden("Forbidden")  # correct response
+        return JsonResponse({"ok": False, "message": "Forbidden"}, status=403)
+    
+    qs = Report.objects.select_related("reporter", "handled_by", "content_type").order_by("-created_at")
+    reports_data = [{
+        'id': r.pk, 'reporter': r.reporter.username, 'target_type': r.target_type,
+        'reason': r.reason, 'details': r.details, 'status': r.status,
+        'target_name': r.target_name, 'is_locked': r.is_locked,
+    } for r in qs]
+    return JsonResponse({"ok": True, "reports": reports_data})
 
-    qs = (Report.objects
-          .select_related("reporter", "handled_by")
-          .order_by("-created_at"))
-
-    q = request.GET.get("q")
-    if q:
-        qs = qs.filter(
-            Q(details__icontains=q) |
-            Q(reporter__username__icontains=q) |
-            Q(reason__icontains=q)
-        )
-
-    page_obj = Paginator(qs, 15).get_page(request.GET.get("page"))
-    return render(request, "reports/mod_list.html", {
-        "page_obj": page_obj,
-        "Report": Report,  # optional if template needs choices or class-level stuff
-    })
-
-
+@csrf_exempt
 @require_POST
 @login_required
 def update_report(request, pk: int):
+    """Updates report details for owner"""
     report = get_object_or_404(Report, pk=pk)
+    if report.reporter_id != request.user.id or report.is_locked:
+        return JsonResponse({"ok": False, "message": "Forbidden or Locked."}, status=403)
 
-    if report.reporter_id != request.user.id:
-        return HttpResponseForbidden("You cannot edit this report.")
+    data = get_json_data(request)
+    new_details = data.get('details')
+    if new_details is not None:
+        report.details = new_details
+        report.save()
+        return JsonResponse({"ok": True, "message": "Details updated."})
+    return JsonResponse({"ok": False, "message": "No data."}, status=400)
 
-    if report.is_locked:
-        return JsonResponse({"ok": False, "message": "This report can no longer be edited."}, status=409)
-
-    form = ReportUpdateForm(request.POST, instance=report)
-    if not form.is_valid():
-        return JsonResponse({"ok": False, "errors": form.errors}, status=400)
-
-    form.save()
-    return JsonResponse({"ok": True, "message": "Report updated.", "id": report.id})
-
-
+@csrf_exempt
 @require_POST
 @login_required
 def update_report_status(request, pk: int):
+    """Allows staff to change report status"""
     if not request.user.is_staff:
-        return HttpResponseForbidden("Staff only")
+        return JsonResponse({"ok": False, "message": "Staff only"}, status=403)
 
     report = get_object_or_404(Report, pk=pk)
-    new_status = request.POST.get('status')
+    data = get_json_data(request)
+    new_status = data.get('status')
 
-    if new_status not in (Report.Status.RESOLVED, Report.Status.REJECTED, Report.Status.UNDER_REVIEW):
-        return HttpResponseBadRequest("Invalid status")
+    if new_status in [choice[0] for choice in Report.Status.choices]:
+        report.set_status(new_status, request.user)
+        return JsonResponse({"ok": True, "message": "Status updated."})
+    return JsonResponse({"ok": False, "message": "Invalid status"}, status=400)
 
-    report.set_status(new_status, request.user)
-    return redirect('reports:mod_list')
-
+@csrf_exempt
 @require_POST
 @login_required
-def delete_report(request, pk: int):   # <-- accept pk
+def delete_report(request, pk: int):
+    """Deletes report if not locked"""
     report = get_object_or_404(Report, pk=pk, reporter=request.user)
-    if getattr(report, "is_locked", False):
-        return HttpResponseForbidden("Locked reports cannot be deleted.")
+    if report.is_locked:
+        return JsonResponse({"ok": False, "message": "Locked."}, status=403)
     report.delete()
-    return redirect("reports:my")
+    return JsonResponse({"ok": True, "message": "Deleted."})
 
+@csrf_exempt
 @login_required
 def mod_detail(request, pk: int):
+    """Detailed view for staff"""
     if not (request.user.is_staff or request.user.is_superuser):
-        return HttpResponseForbidden("Forbidden")
+        return JsonResponse({"ok": False, "message": "Forbidden"}, status=403)
+    
+    report = get_object_or_404(Report.objects.select_related("reporter", "handled_by"), pk=pk)
+    report_data = {
+        'id': report.pk, 'target_name': report.target_name, 'reason': report.reason,
+        'details': report.details, 'status': report.status, 'is_locked': report.is_locked,
+    }
+    return JsonResponse({"ok": True, "report": report_data})
 
-    report = get_object_or_404(
-        Report.objects.select_related("reporter", "handled_by", "content_type"),
-        pk=pk
-    )
-
-    target_obj = None
-    try:
-        if hasattr(report, "target") and report.target:
-            target_obj = report.target
-    except Exception:
-        target_obj = None
-
-    # ⬇️ NEW: derive a human-friendly name from the target object
-    target_name = "-"
-    if target_obj is not None:
-        for attr in ("name", "title", "username", "slug"):
-            val = getattr(target_obj, attr, None)
-            # if it's a callable (rare), call it
-            if callable(val):
-                try:
-                    val = val()
-                except Exception:
-                    val = None
-            if val:
-                target_name = str(val)
-                break
-        else:
-            target_name = str(target_obj)  # fallback to __str__
-
-    return render(request, "reports/mod_detail.html", {
-        "report": report,
-        "target_obj": target_obj,
-        "target_name": target_name,   # ⬅️ pass to template
-        "Report": Report,
+@csrf_exempt
+@login_required
+def get_report_options(request):
+    """Options for Flutter dropdowns"""
+    return JsonResponse({
+        "ok": True,
+        "options": {
+            "target_types": [{"value": c[0], "label": c[1]} for c in Report.TargetType.choices],
+            "reasons": [{"value": c[0], "label": c[1]} for c in Report.Reason.choices],
+            "statuses": [{"value": c[0], "label": c[1]} for c in Report.Status.choices],
+        }
     })
