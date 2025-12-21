@@ -5,13 +5,15 @@ document.addEventListener('DOMContentLoaded', () => {
     const m = document.cookie.match('(^|;)\\s*' + name + '\\s*=\\s*([^;]+)');
     return m ? m.pop() : '';
   }
+
   function getCsrf() {
     const el = document.querySelector('[name=csrfmiddlewaretoken]');
     return el ? el.value : getCookie('csrftoken');
   }
+
   async function postForm(url, form) {
     const data = new FormData(form);
-    const res  = await fetch(url, {
+    const res = await fetch(url, {
       method: 'POST',
       headers: { 'X-CSRFToken': getCsrf() },
       body: data
@@ -20,60 +22,69 @@ document.addEventListener('DOMContentLoaded', () => {
     return { ok: res.ok, json, res };
   }
 
+  // CREATE POST (list page)
+  const createForm = document.querySelector('#create-form');
+  if (createForm) {
+    // prevent multiple bindings
+    if (!createForm.dataset.bound) {
+      createForm.dataset.bound = '1';
 
-const createForm = document.querySelector('#create-form');
-if (createForm) {
+      createForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
 
-  if (!createForm.dataset.bound) {
-    createForm.dataset.bound = '1';
-    createForm.addEventListener('submit', async (e) => {
-      e.preventDefault();
+        // submission lock to stop double posts
+        if (createForm.dataset.submitting === '1') return;
+        createForm.dataset.submitting = '1';
 
-   
-      if (createForm.dataset.submitting === '1') return;
-      createForm.dataset.submitting = '1';
-
-      const btn = createForm.querySelector('#post-btn');
-      if (btn) { btn.disabled = true; btn.textContent = 'Posting…'; }
-
-      try {
-        const { ok, json } = await postForm(createForm.action, createForm);
-        if (!ok) {
-          alert('Failed to create post: ' + JSON.stringify(json));
-          return;
+        const btn = createForm.querySelector('#post-btn');
+        if (btn) {
+          btn.disabled = true;
+          btn.textContent = 'Posting…';
         }
 
-   
-        if (json && typeof json.html === 'string') {
-          const feed = document.getElementById('feed');
-          if (feed) {
-            document.getElementById('feed-empty')?.remove();
-            const tpl = document.createElement('template');
-            tpl.innerHTML = json.html.trim();
-            feed.prepend(tpl.content.firstElementChild);
+        try {
+          const { ok, json } = await postForm(createForm.action, createForm);
+          if (!ok) {
+            alert('Failed to create post: ' + JSON.stringify(json));
+            return;
           }
-          createForm.reset();
-        } else {
-  
-          window.location.reload();
+
+          // Use returned HTML to prepend without reload
+          if (json && typeof json.html === 'string') {
+            const feed = document.getElementById('feed');
+            if (feed) {
+              document.getElementById('feed-empty')?.remove();
+              const tpl = document.createElement('template');
+              tpl.innerHTML = json.html.trim();
+              feed.prepend(tpl.content.firstElementChild);
+            }
+            createForm.reset();
+          } else {
+            // fallback if API didn’t return HTML
+            window.location.reload();
+          }
+        } finally {
+          createForm.dataset.submitting = '0';
+          if (btn) {
+            btn.disabled = false;
+            btn.textContent = 'Post';
+          }
         }
-      } finally {
-        createForm.dataset.submitting = '0';
-        if (btn) { btn.disabled = false; btn.textContent = 'Post'; }
-      }
-    }, { passive: false });
+      }, { passive: false });
+    }
   }
-}
 
-
+  // LIKE TOGGLE (list + detail)
   document.addEventListener('click', async (e) => {
     const btn = e.target.closest('.btn-like');
     if (!btn) return;
+
     const id = btn.dataset.id;
     const res = await fetch(`/posts/api/${id}/like-toggle/`, {
       method: 'POST',
       headers: { 'X-CSRFToken': getCsrf() }
     });
+
     const j = await res.json().catch(() => ({}));
     if (res.ok) {
       const span = btn.querySelector('[data-like-count]');
@@ -85,16 +96,20 @@ if (createForm) {
     }
   });
 
+  // DELETE POST (list page)
   document.addEventListener('click', async (e) => {
     const del = e.target.closest('.btn-del, .btn-delete-post');
     if (!del) return;
+
     e.preventDefault();
     if (!confirm('Delete this post?')) return;
+
     const id = del.dataset.id;
     const res = await fetch(`/posts/api/${id}/delete/`, {
       method: 'POST',
       headers: { 'X-CSRFToken': getCsrf() }
     });
+
     if (res.ok) {
       document.getElementById(`post-${id}`)?.remove();
       const feed = document.getElementById('feed');
@@ -113,20 +128,24 @@ if (createForm) {
   function removeEmptyCommentsIfAny() {
     const list = document.getElementById('comment-list');
     if (!list) return;
+
     const empty =
       list.querySelector('#empty-comments') ||
       list.querySelector('[data-empty]') ||
       list.querySelector('.empty-comments') ||
       list.querySelector('.list-group-item.text-muted');
+
     if (empty) empty.remove();
   }
 
+  // CREATE COMMENT (detail page)
   const commentForm = document.querySelector('#comment-form');
   if (commentForm) {
     commentForm.addEventListener('submit', async (e) => {
       e.preventDefault();
+
       const input = commentForm.querySelector('input[name="body"]');
-      const body  = (input?.value || '').trim();
+      const body = (input?.value || '').trim();
       if (!body) return;
 
       const { ok, json } = await postForm(commentForm.action, commentForm);
@@ -140,7 +159,7 @@ if (createForm) {
 
       removeEmptyCommentsIfAny();
 
-      const li  = document.createElement('li');
+      const li = document.createElement('li');
       li.className = 'list-group-item d-flex justify-content-between align-items-start';
       li.id = `c-${json.id}`;
       li.innerHTML = `
@@ -148,21 +167,26 @@ if (createForm) {
         <button class="btn btn-sm btn-outline-danger btn-del-comment" data-id="${json.id}">Delete</button>
       `;
       list.appendChild(li);
+
       commentForm.reset();
     });
 
+    // DELETE COMMENT (detail page)
     document.addEventListener('click', async (e) => {
       const btn = e.target.closest('.btn-del-comment');
       if (!btn) return;
+
       const id = btn.dataset.id;
       const res = await fetch(`/posts/api/comment/${id}/delete/`, {
         method: 'POST',
         headers: { 'X-CSRFToken': getCsrf() }
       });
+
       if (!res.ok) {
         alert('Failed to delete comment.');
         return;
       }
+
       document.getElementById(`c-${id}`)?.remove();
     });
   }
