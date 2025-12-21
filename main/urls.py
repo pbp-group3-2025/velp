@@ -6,7 +6,7 @@ from main.views import edit_venue, edit_venue_ajax
 from main.views import delete_venue, delete_venue_ajax
 from main.views import create_booking, booking_list, booking_confirm, booking_cancel, proxy_image
 from main.views import get_reviews_html
-from main.views import create_booking, booking_list, booking_confirm, booking_cancel, create_booking_ajax
+from main.views import create_booking, booking_list, booking_confirm, booking_cancel, create_booking_ajax, show_my_bookings_json, delete_booking_flutter, update_booking_payment_flutter
 from main.views import create_venue_ajax, create_venue_flutter, update_venue_flutter, delete_venue_flutter
 
 
@@ -39,5 +39,8 @@ urlpatterns = [
     path('create-venue-flutter/', create_venue_flutter, name='create_news_flutter'),
     path('update-venue-flutter/<str:venue_id>/', update_venue_flutter, name='update_venue_flutter'),
     path('delete-venue-flutter/<str:venue_id>/', delete_venue_flutter, name='delete_venue_flutter'),
+    path('bookings/json/', show_my_bookings_json, name='show_my_bookings_json'),
+    path('delete-booking-flutter/<int:id>/', delete_booking_flutter, name='delete_booking_flutter'),
+    path('update-booking-payment-flutter/<int:id>/', update_booking_payment_flutter, name='update_booking_payment_flutter'),
 ]
 

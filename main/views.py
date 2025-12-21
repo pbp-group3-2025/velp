@@ -23,7 +23,7 @@ from django.views.decorators.csrf import csrf_exempt
 from django.utils.html import strip_tags
 import json
 from django.http import JsonResponse
-from django.views.decorators.http import require_http_methods
+from django.views.decorators.http import require_http_methods, require_POST
 from django.contrib.auth.decorators import login_required
 
 # Create your views here.
@@ -345,7 +345,9 @@ def proxy_image(request):
         )
     except requests.RequestException as e:
         return HttpResponse(f'Error fetching image: {str(e)}', status=500)
+@csrf_exempt
 @login_required(login_url='/login')
+@require_POST
 def create_booking_ajax(request, id):
     venue = get_object_or_404(Venue, pk=id)
 
@@ -425,6 +427,57 @@ def booking_confirm(request, pk):
 
 
     return render(request, 'booking/booking_confirm.html', {'booking': booking})
+
+@login_required
+def show_my_bookings_json(request):
+    # Filter bookings that belong to the current logged-in user
+    bookings = Booking.objects.filter(user=request.user)
+    return HttpResponse(serializers.serialize("json", bookings), content_type="application/json")
+
+@csrf_exempt
+@require_POST
+def delete_booking_flutter(request, id):
+    try:
+        # Get the booking with the given id
+        booking = Booking.objects.get(pk=id)
+        # Optional: Check if the user owns this booking
+        if booking.user != request.user:
+             return JsonResponse({'status': 'error', 'message': 'You are not authorized to delete this booking.'}, status=403)
+             
+        booking.delete()
+        return JsonResponse({'status': 'success', 'message': 'Booking cancelled successfully!'})
+    except Booking.DoesNotExist:
+        return JsonResponse({'status': 'error', 'message': 'Booking not found.'}, status=404)
+    except Exception as e:
+        return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+
+@csrf_exempt
+@require_POST
+def update_booking_payment_flutter(request, id):
+    try:
+        booking = Booking.objects.get(pk=id)
+        
+        # Security check: Ensure user owns this booking
+        if booking.user != request.user:
+            return JsonResponse({'status': 'error', 'message': 'Unauthorized'}, status=403)
+
+        # Parse the JSON data sent from Flutter
+        data = json.loads(request.body)
+        new_payment = data.get('payment_method')
+
+        if not new_payment:
+             return JsonResponse({'status': 'error', 'message': 'No payment method provided'}, status=400)
+
+        # Update and save
+        booking.payment_method = new_payment
+        booking.save()
+
+        return JsonResponse({'status': 'success', 'message': 'Payment method updated!'})
+
+    except Booking.DoesNotExist:
+        return JsonResponse({'status': 'error', 'message': 'Booking not found'}, status=404)
+    except Exception as e:
+        return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
 
 @csrf_exempt
 def create_venue_flutter(request):
