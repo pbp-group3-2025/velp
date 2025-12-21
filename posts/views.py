@@ -170,3 +170,51 @@ def api_create(request):
     p = Post.objects.create(author=request.user, content=content, venue_hint=venue_hint)
     html = render_to_string("partials/card.html", {"p": p, "user": request.user})
     return JsonResponse({"html": html}, status=201)
+
+@login_required
+def api_post_list(request):
+    """Get list of all posts with engagement info."""
+    q = (request.GET.get('q') or '').strip()
+    qs = Post.objects.select_related('author').annotate(
+        like_count=Count('likes', distinct=True),
+        comment_count=Count('comments', distinct=True),
+    ).order_by('-created_at')
+
+    if q:
+        qs = qs.filter(Q(content__icontains=q) | Q(venue_hint__icontains=q))
+
+    data = []
+    uid = request.user.id
+    for p in qs[:50]:
+        data.append({
+            'id': str(p.id),
+            'author': p.author.username,
+            'content': p.content,
+            'venue_hint': p.venue_hint,
+            'created_at': p.created_at.strftime('%Y-%m-%d %H:%M'),
+            'updated_at': p.updated_at.strftime('%Y-%m-%d %H:%M'),
+            'like_count': p.like_count,
+            'comment_count': p.comment_count,
+            'is_liked': p.likes.filter(id=uid).exists(),
+            'is_owner': p.author_id == uid,
+        })
+    return JsonResponse(data, safe=False)
+
+
+@login_required
+def api_post_detail(request, pk):
+    """Get a single post with engagement info."""
+    post = get_object_or_404(Post, pk=pk)
+    post_dict = {
+        'id': str(post.id),
+        'author': post.author.username,
+        'content': post.content,
+        'venue_hint': post.venue_hint,
+        'created_at': post.created_at.strftime('%Y-%m-%d %H:%M'),
+        'updated_at': post.updated_at.strftime('%Y-%m-%d %H:%M'),
+        'like_count': post.likes.count(),
+        'comment_count': post.comments.count(),
+        'is_liked': post.likes.filter(id=request.user.id).exists(),
+        'is_owner': post.author_id == request.user.id,
+    }
+    return JsonResponse(post_dict)
