@@ -18,4 +18,22 @@ urlpatterns = [
     path("groups/<slug:slug>/posts/<int:pk>/comments/<int:cpk>/delete/",views.delete_comment,name="delete_comment"),
     path("groups/<slug:slug>/posts/<int:pk>/", views.post_detail, name="post_detail"),
     path("groups/<slug:slug>/", views.group_detail, name="group_detail"),
+
+
+    # AJAX endpoints for the flutter
+    path("api/groups/", views.api_group_list, name="api_group_list"),
+    path("api/groups/create/", views.api_create_group, name="api_create_group"),
+    path("api/groups/<slug:slug>/", views.api_group_detail, name="api_group_detail"),
+    path("api/groups/<slug:slug>/edit/", views.api_edit_group, name="api_edit_group"),
+    path("api/groups/<slug:slug>/delete/", views.api_delete_group, name="api_delete_group"),
+    path("api/groups/<slug:slug>/join/", views.api_join_group, name="api_join_group"),
+    path("api/groups/<slug:slug>/leave/", views.api_leave_group, name="api_leave_group"),
+    path("api/groups/<slug:slug>/posts/create/", views.api_create_post, name="api_create_post"),
+    path("api/groups/<slug:slug>/posts/<int:pk>/", views.api_post_detail, name="api_post_detail"),
+    path("api/groups/<slug:slug>/posts/<int:pk>/delete/", views.api_delete_post, name="api_delete_post"),
+    path("api/groups/<slug:slug>/posts/<int:pk>/comments/create/", views.api_create_comment, name="api_create_comment"),
+    path("api/groups/<slug:slug>/posts/<int:pk>/comments/<int:cpk>/delete/", views.api_delete_comment, name="api_delete_comment"),
+
+
+    
 ]
